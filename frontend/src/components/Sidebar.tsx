@@ -7,18 +7,26 @@ import {
   Video, 
   Music, 
   Settings,
-  Home,
   Star,
   Clock,
-  Trash2
+  Trash2,
+  LayoutGrid
 } from 'lucide-react'
+
+type FilterType = 'all' | 'video' | 'image' | 'audio'
 
 interface SidebarProps {
   onCreateNote?: () => void
   onCreateFolder?: () => void
+  onFilterChange?: (filter: FilterType) => void
+  currentFilter?: FilterType
 }
 
-export function Sidebar({ onCreateNote, onCreateFolder }: SidebarProps) {
+export function Sidebar({ onCreateNote, onCreateFolder, onFilterChange, currentFilter = 'all' }: SidebarProps) {
+  const handleFilterClick = (filter: FilterType) => {
+    onFilterChange?.(filter)
+  }
+
   return (
     <aside className="w-60 h-screen bg-secondary/50 border-r border-border flex flex-col">
       {/* Logo / Brand */}
@@ -55,9 +63,13 @@ export function Sidebar({ onCreateNote, onCreateFolder }: SidebarProps) {
         <p className="text-xs font-medium text-muted-foreground px-2 py-2">
           Navigate
         </p>
-        <Button variant="secondary" className="w-full justify-start gap-2 h-9 text-sm">
-          <Home className="h-4 w-4" />
-          Home
+        <Button 
+          variant={currentFilter === 'all' ? 'secondary' : 'ghost'} 
+          className={`w-full justify-start gap-2 h-9 text-sm ${currentFilter !== 'all' ? 'text-muted-foreground hover:text-foreground' : ''}`}
+          onClick={() => handleFilterClick('all')}
+        >
+          <LayoutGrid className="h-4 w-4" />
+          All Files
         </Button>
         <Button variant="ghost" className="w-full justify-start gap-2 h-9 text-sm text-muted-foreground hover:text-foreground">
           <Star className="h-4 w-4" />
@@ -75,15 +87,27 @@ export function Sidebar({ onCreateNote, onCreateFolder }: SidebarProps) {
           <FileText className="h-4 w-4" />
           Notes
         </Button>
-        <Button variant="ghost" className="w-full justify-start gap-2 h-9 text-sm text-muted-foreground hover:text-foreground">
+        <Button 
+          variant={currentFilter === 'image' ? 'secondary' : 'ghost'} 
+          className={`w-full justify-start gap-2 h-9 text-sm ${currentFilter !== 'image' ? 'text-muted-foreground hover:text-foreground' : ''}`}
+          onClick={() => handleFilterClick('image')}
+        >
           <Image className="h-4 w-4" />
           Images
         </Button>
-        <Button variant="ghost" className="w-full justify-start gap-2 h-9 text-sm text-muted-foreground hover:text-foreground">
+        <Button 
+          variant={currentFilter === 'video' ? 'secondary' : 'ghost'} 
+          className={`w-full justify-start gap-2 h-9 text-sm ${currentFilter !== 'video' ? 'text-muted-foreground hover:text-foreground' : ''}`}
+          onClick={() => handleFilterClick('video')}
+        >
           <Video className="h-4 w-4" />
           Videos
         </Button>
-        <Button variant="ghost" className="w-full justify-start gap-2 h-9 text-sm text-muted-foreground hover:text-foreground">
+        <Button 
+          variant={currentFilter === 'audio' ? 'secondary' : 'ghost'} 
+          className={`w-full justify-start gap-2 h-9 text-sm ${currentFilter !== 'audio' ? 'text-muted-foreground hover:text-foreground' : ''}`}
+          onClick={() => handleFilterClick('audio')}
+        >
           <Music className="h-4 w-4" />
           Audio
         </Button>

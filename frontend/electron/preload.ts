@@ -3,7 +3,12 @@ import { contextBridge, ipcRenderer } from 'electron'
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Add your IPC methods here
+  // File dialog methods
+  openFiles: (options?: { filters?: { name: string; extensions: string[] }[] }) => 
+    ipcRenderer.invoke('dialog:openFiles', options),
+  openFolder: () => ipcRenderer.invoke('dialog:openFolder'),
+  
+  // Legacy methods
   send: (channel: string, data: unknown) => {
     const validChannels = ['toMain']
     if (validChannels.includes(channel)) {

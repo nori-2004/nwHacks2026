@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, session } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -15,7 +15,23 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: false, // Allow loading local files via file:// protocol
     },
+  })
+
+  // Set Content Security Policy to allow connections to backend
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file:; " +
+          "connect-src 'self' http://localhost:* ws://localhost:*; " +
+          "media-src 'self' file: blob:; " +
+          "img-src 'self' data: file: blob: https:;"
+        ]
+      }
+    })
   })
 
   // In development, load from Vite dev server
@@ -27,6 +43,27 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 }
+
+// IPC handler for opening file dialog
+ipcMain.handle('dialog:openFiles', async (_event, options) => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile', 'multiSelections'],
+    filters: options?.filters || [
+      { name: 'Videos', extensions: ['mp4', 'mov', 'avi', 'mkv', 'webm'] },
+      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  })
+  return result.filePaths
+})
+
+// IPC handler for opening folder dialog
+ipcMain.handle('dialog:openFolder', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory']
+  })
+  return result.filePaths[0]
+})
 
 app.whenReady().then(() => {
   createWindow()

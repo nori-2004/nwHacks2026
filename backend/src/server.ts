@@ -17,6 +17,11 @@ app.get('/', (req: Request, res: Response) => {
   res.json({ message: 'API is running' })
 })
 
+app.use((req: Request, res: Response, next) => {
+  console.log(`${req.method} ${req.path}`)
+  next()
+});
+
 app.use('/api', routes)
 
 // Start server
