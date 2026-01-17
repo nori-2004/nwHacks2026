@@ -1,8 +1,12 @@
 import express, { Request, Response } from 'express'
 import cors from 'cors'
+import dotenv from 'dotenv'
+dotenv.config()
+
+import routes from './routes'
 
 const app = express()
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 3000
 
 // Middleware
 app.use(cors())
@@ -13,9 +17,7 @@ app.get('/', (req: Request, res: Response) => {
   res.json({ message: 'API is running' })
 })
 
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
-})
+app.use('/api', routes)
 
 // Start server
 app.listen(PORT, () => {
