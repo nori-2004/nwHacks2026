@@ -16,7 +16,8 @@ const storage = multer.diskStorage({
   }
 })
 
-export const upload = multer({
+// Video-only upload (for AI processing)
+export const uploadVideo = multer({
   storage,
   fileFilter: (req, file, cb) => {
     const allowedTypes = /mp4|avi|mov|mkv|webm/
@@ -29,3 +30,60 @@ export const upload = multer({
   },
   limits: { fileSize: 500 * 1024 * 1024 } // 500MB limit
 })
+
+// Image-only upload
+export const uploadImage = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpg|jpeg|png|gif|webp|svg|bmp|ico/
+    const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase())
+    if (ext || file.mimetype.startsWith('image/')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only image files are allowed'))
+    }
+  },
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+})
+
+// Audio-only upload
+export const uploadAudio = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /mp3|wav|ogg|flac|m4a|aac|wma/
+    const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase())
+    if (ext || file.mimetype.startsWith('audio/')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only audio files are allowed'))
+    }
+  },
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+})
+
+// Document upload
+export const uploadDocument = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|doc|docx|txt|md|rtf|odt|xls|xlsx|ppt|pptx|csv/
+    const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase())
+    if (ext || 
+        file.mimetype.includes('pdf') || 
+        file.mimetype.includes('document') ||
+        file.mimetype.includes('text')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only document files are allowed'))
+    }
+  },
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+})
+
+// General upload - accepts all file types
+export const uploadAny = multer({
+  storage,
+  limits: { fileSize: 500 * 1024 * 1024 } // 500MB limit
+})
+
+// Legacy export for backward compatibility
+export const upload = uploadVideo

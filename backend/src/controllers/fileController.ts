@@ -448,3 +448,50 @@ export const removeTag = (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to remove tag', details: (error as Error).message })
   }
 }
+
+// Upload files (browser mode - copies files to uploads directory)
+export const uploadFiles = (req: Request, res: Response) => {
+  try {
+    const files = req.files as Express.Multer.File[]
+    
+    if (!files || files.length === 0) {
+      res.status(400).json({ error: 'No files uploaded' })
+      return
+    }
+
+    const results: { success: any[]; failed: any[] } = { success: [], failed: [] }
+
+    for (const file of files) {
+      const mimetype = file.mimetype
+      const filetype = getFileType(mimetype)
+      
+      // Check if already registered
+      const existing = FileModel.getByPath(file.path)
+      if (existing) {
+        results.failed.push({ filepath: file.path, error: 'Already registered', file: existing })
+        continue
+      }
+
+      // Create file record
+      const fileRecord = FileModel.create({
+        filename: file.originalname,
+        filepath: file.path,
+        filetype,
+        size: file.size,
+        mimetype
+      })
+
+      results.success.push(fileRecord)
+    }
+
+    res.status(201).json({
+      success: true,
+      files: results.success,
+      registered: results.success.length,
+      failed: results.failed.length,
+      results
+    })
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to upload files', details: (error as Error).message })
+  }
+}

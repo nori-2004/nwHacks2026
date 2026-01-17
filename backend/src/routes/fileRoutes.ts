@@ -10,8 +10,10 @@ import {
   searchFiles,
   setMetadata,
   addTag,
-  removeTag
+  removeTag,
+  uploadFiles
 } from '../controllers/fileController'
+import { uploadVideo, uploadImage, uploadAudio, uploadDocument, uploadAny } from '../middleware/upload'
 
 const router = Router()
 
@@ -24,6 +26,13 @@ router.post('/register', registerFile)
 router.post('/register-multiple', registerMultipleFiles)
 router.put('/:id', updateFile)
 router.delete('/:id', deleteFile)
+
+// Upload endpoints for different file types (browser mode)
+router.post('/upload', uploadAny.array('files', 20), uploadFiles)
+router.post('/upload/video', uploadVideo.array('files', 10), uploadFiles)
+router.post('/upload/image', uploadImage.array('files', 20), uploadFiles)
+router.post('/upload/audio', uploadAudio.array('files', 20), uploadFiles)
+router.post('/upload/document', uploadDocument.array('files', 20), uploadFiles)
 
 // Metadata
 router.post('/:id/metadata', setMetadata)

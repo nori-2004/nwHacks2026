@@ -103,11 +103,14 @@ export const api = {
   },
 
   // Upload files (browser mode) - uses FormData
-  async uploadFiles(files: File[]): Promise<{ success: boolean; files?: FileRecord[] }> {
+  async uploadFiles(files: File[], fileType?: 'video' | 'image' | 'audio' | 'document'): Promise<{ success: boolean; files?: FileRecord[]; registered?: number }> {
     const formData = new FormData()
-    files.forEach(file => formData.append('videos', file))
+    files.forEach(file => formData.append('files', file))
     
-    const res = await fetch(`${API_BASE}/video/upload`, {
+    // Use type-specific endpoint if specified, otherwise use general upload
+    const endpoint = fileType ? `${API_BASE}/files/upload/${fileType}` : `${API_BASE}/files/upload`
+    
+    const res = await fetch(endpoint, {
       method: 'POST',
       body: formData
     })

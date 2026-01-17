@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 import { VideoGrid } from '@/components/VideoGrid'
-import { UploadPanel } from '@/components/UploadPanel'
+import { AddFileButton } from '@/components/AddFile'
 import { api } from '@/lib/api'
 import type { FileRecord } from '@/lib/api'
 
@@ -73,21 +73,21 @@ function App() {
         {/* Content Area */}
         <main className="flex-1 overflow-auto bg-background p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            {/* Upload Panel */}
-            <UploadPanel onUploadComplete={fetchFiles} />
-
-            {/* Video Grid */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">
+            {/* Header with Add Button */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">
                 {filter === 'all' ? 'All Files' : `${filter.charAt(0).toUpperCase() + filter.slice(1)}s`}
                 <span className="text-muted-foreground font-normal ml-2">({files.length})</span>
               </h2>
-              <VideoGrid 
-                files={files} 
-                loading={loading} 
-                onRefresh={fetchFiles} 
-              />
+              <AddFileButton onComplete={fetchFiles} />
             </div>
+
+            {/* File Grid */}
+            <VideoGrid 
+              files={files} 
+              loading={loading} 
+              onRefresh={fetchFiles} 
+            />
           </div>
         </main>
       </div>
