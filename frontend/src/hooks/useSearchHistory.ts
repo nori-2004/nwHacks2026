@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 
-const STORAGE_KEY = 'notebox-search-history'
+const STORAGE_KEY = 'omni-search-history'
 const MAX_HISTORY_ITEMS = 10
 
 function loadHistoryFromStorage(): string[] {

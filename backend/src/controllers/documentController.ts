@@ -73,7 +73,7 @@ For summary:
       "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "Notebox Document Analyzer"
+      "X-Title": "Omni Document Analyzer"
     },
     body: JSON.stringify({
       model: "google/gemini-2.0-flash-001",

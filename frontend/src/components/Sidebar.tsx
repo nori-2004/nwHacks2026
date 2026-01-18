@@ -32,9 +32,9 @@ export function Sidebar({ onCreateNote, onCreateFolder, onFilterChange, currentF
       <div className="p-4 border-b border-border">
         <h1 className="text-base font-semibold text-foreground flex items-center gap-2">
           <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center">
-            <span className="text-background text-xs font-bold">N</span>
+            <span className="text-background text-xs font-bold">O</span>
           </div>
-          Notebox
+          Omni
         </h1>
       </div>
 
