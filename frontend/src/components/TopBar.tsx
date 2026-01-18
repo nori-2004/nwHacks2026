@@ -10,10 +10,13 @@ import {
   X,
   Clock,
   Trash2,
-  Database
+  Database,
+  Sun,
+  Moon
 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useSearchHistory } from '@/hooks/useSearchHistory'
+import { useTheme } from '@/hooks/useTheme'
 import { AddFileButton } from '@/components/AddFile'
 import { api } from '@/lib/api'
 
@@ -35,6 +38,7 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
   const dropdownRef = useRef<HTMLDivElement>(null)
   const commandsRef = useRef<HTMLDivElement>(null)
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory()
+  const { theme, toggleTheme } = useTheme()
 
   const handleIndexKeywords = async () => {
     setIsIndexing(true)
@@ -151,7 +155,7 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
   }, [])
 
   return (
-    <header className="h-14 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-10">
+    <header className="h-12 bg-secondary border-b border-border flex items-center justify-between px-4 sticky top-0 z-10">
       {/* Search Bar */}
       <div className="flex-1 max-w-md" ref={dropdownRef}>
         <div className="relative">
@@ -169,7 +173,7 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
               // Delay to allow click on history items
               setTimeout(() => handleSearchSubmit(), 200)
             }}
-            className="w-full h-9 pl-9 pr-10 rounded-md bg-secondary border-none text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+            className="w-full h-8 pl-9 pr-10 rounded-md bg-accent border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
           />
           {searchQuery && (
             <button
@@ -184,14 +188,14 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
           {showHistory && history.length > 0 && !searchQuery && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg overflow-hidden z-50">
               <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                <span className="text-xs font-medium text-muted-foreground">Recent Searches</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Recent Searches</span>
                 <button
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     clearHistory()
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1"
                 >
                   <Trash2 className="h-3 w-3" />
                   Clear
@@ -201,7 +205,7 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
                 {history.map((term, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between px-3 py-2 hover:bg-secondary cursor-pointer group"
+                    className="flex items-center justify-between px-3 py-2 hover:bg-accent cursor-pointer group"
                     onClick={() => handleHistoryItemClick(term)}
                   >
                     <div className="flex items-center gap-2">
@@ -231,12 +235,12 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
         {/* Commands Dropdown */}
         <div className="relative" ref={commandsRef}>
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm" 
-            className="h-8 gap-2"
+            className="h-7 gap-2 text-muted-foreground hover:text-foreground"
             onClick={() => setShowCommands(!showCommands)}
           >
-            <Command className="h-4 w-4" />
+            <Command className="h-3.5 w-3.5" />
             Commands
             <ChevronDown className={`h-3 w-3 transition-transform ${showCommands ? 'rotate-180' : ''}`} />
           </Button>
@@ -248,17 +252,17 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
                 {commands.map((cmd) => (
                   <button
                     key={cmd.id}
-                    className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-secondary transition-colors"
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                     onClick={() => {
                       cmd.action?.()
                       setShowCommands(false)
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <cmd.icon className="h-4 w-4 text-muted-foreground" />
+                      <cmd.icon className="h-4 w-4" />
                       <span>{cmd.label}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{cmd.shortcut}</span>
+                    <span className="text-[11px] text-muted-foreground/60">{cmd.shortcut}</span>
                   </button>
                 ))}
               </div>
@@ -266,9 +270,29 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
           )}
         </div>
 
-        <Button variant="outline" size="sm" className="h-8">
-          <SlidersHorizontal className="h-4 w-4 mr-2" />
+        <Button variant="ghost" size="sm" className="h-7 text-muted-foreground hover:text-foreground">
+          <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
           Filters
+        </Button>
+
+        {/* Theme Toggle - Cute animated icon */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-7 w-7 text-muted-foreground hover:text-foreground relative overflow-hidden"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode ☀️' : 'Switch to dark mode 🌙'}
+        >
+          <Sun className={`h-3.5 w-3.5 absolute transition-all duration-300 ${
+            theme === 'dark' 
+              ? 'rotate-0 scale-100 opacity-100' 
+              : 'rotate-90 scale-0 opacity-0'
+          }`} />
+          <Moon className={`h-3.5 w-3.5 absolute transition-all duration-300 ${
+            theme === 'light' 
+              ? 'rotate-0 scale-100 opacity-100' 
+              : '-rotate-90 scale-0 opacity-0'
+          }`} />
         </Button>
 
         <AddFileButton onComplete={onFilesAdded || (() => {})} />

@@ -16,7 +16,7 @@ export function ActionButtons({
   onAnalyzeWithAI 
 }: ActionButtonsProps) {
   // AI analysis is available for videos, audio, and documents
-  const isAISupported = selectedType === 'video' || selectedType === 'audio' || selectedType === 'document' || selectedType === 'all'
+  const isAISupported = selectedType === 'video' || selectedType === 'audio' || selectedType === 'document'
   const isAIDisabled = loading || !isAISupported
 
   return (

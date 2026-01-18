@@ -191,12 +191,12 @@ function App() {
 
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-[15px] font-medium text-foreground">
                 {debouncedSearchQuery.trim() 
                   ? (
                     <span className="flex items-center gap-2">
                       {isSemanticSearch && (
-                        <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">AI Search</span>
+                        <span className="text-[11px] px-2 py-0.5 bg-primary/20 text-primary rounded-full">AI Search</span>
                       )}
                       Results for "{debouncedSearchQuery}"
                     </span>

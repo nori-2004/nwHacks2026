@@ -1,6 +1,6 @@
-import { FileVideo, FileImage, FileAudio, FileText, File } from 'lucide-react'
+import { FileVideo, FileImage, FileAudio, FileText } from 'lucide-react'
 
-export type FileType = 'video' | 'image' | 'audio' | 'document' | 'all'
+export type FileType = 'video' | 'image' | 'audio' | 'document'
 
 export type StatusType = { type: 'success' | 'error' | 'info'; message: string } | null
 
@@ -36,12 +36,7 @@ export const fileTypeConfig: Record<FileType, FileTypeConfig> = {
     accept: '.txt,.md',
     extensions: ['txt', 'md']
   },
-  all: {
-    label: 'All Files',
-    icon: File,
-    accept: '*/*',
-    extensions: ['*']
-  }
+  // 'All Files' option removed
 }
 
 export const isElectron = (): boolean => {

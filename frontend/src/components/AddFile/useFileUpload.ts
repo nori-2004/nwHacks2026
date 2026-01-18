@@ -18,8 +18,8 @@ function detectFileType(
   selectedFiles: string[],
   browserFiles: File[]
 ): 'video' | 'audio' | 'document' | 'image' | null {
-  // If user explicitly selected a type (not 'all'), use that
-  if (selectedType && selectedType !== 'all') {
+  // If user explicitly selected a type, use that
+  if (selectedType) {
     return selectedType
   }
 
@@ -110,10 +110,8 @@ export function useFileUpload({ onComplete }: UseFileUploadOptions) {
           setStatus({ type: 'error', message: 'Failed to add files' })
         }
       } else {
-        // Map FileType to API file type (exclude 'all' and 'document' -> undefined for general upload)
-        const apiFileType = selectedType === 'all' ? undefined : 
-                           selectedType === 'document' ? 'document' : 
-                           selectedType as 'video' | 'image' | 'audio' | 'document' | undefined
+  // Map FileType to API file type (exclude 'document' -> undefined for general upload)
+  const apiFileType = selectedType === 'document' ? undefined : selectedType as 'video' | 'image' | 'audio' | undefined
         const result = await api.uploadFiles(browserFiles, apiFileType)
         if (result.success) {
           setStatus({ type: 'success', message: `Uploaded ${result.registered || result.files?.length || 0} files` })
