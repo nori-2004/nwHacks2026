@@ -12,18 +12,17 @@ import {
   Trash2,
   LayoutGrid
 } from 'lucide-react'
-
-type FilterType = 'all' | 'video' | 'image' | 'audio'
+import { type ContentType } from '@/App'
 
 interface SidebarProps {
   onCreateNote?: () => void
   onCreateFolder?: () => void
-  onFilterChange?: (filter: FilterType) => void
-  currentFilter?: FilterType
+  onFilterChange?: (filter: ContentType) => void
+  currentFilter?: ContentType
 }
 
 export function Sidebar({ onCreateNote, onCreateFolder, onFilterChange, currentFilter = 'all' }: SidebarProps) {
-  const handleFilterClick = (filter: FilterType) => {
+  const handleFilterClick = (filter: ContentType) => {
     onFilterChange?.(filter)
   }
 

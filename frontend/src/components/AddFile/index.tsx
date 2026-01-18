@@ -42,6 +42,7 @@ export function AddFileButton({ onComplete }: AddFileButtonProps) {
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className="gap-2"
+        data-add-file-button
       >
         <Plus className="h-4 w-4" />
         Add Files

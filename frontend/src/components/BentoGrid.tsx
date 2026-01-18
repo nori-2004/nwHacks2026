@@ -8,9 +8,12 @@ import {
   FileText,
   Image as ImageIcon,
   Video,
-  Music
+  Music,
+  Search
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { HighlightText } from '@/components/HighlightText'
+import { type ContentType } from '@/App'
 
 // Types for different content items
 interface BaseItem {
@@ -47,6 +50,11 @@ interface AudioItem extends BaseItem {
 }
 
 type ContentItem = TextItem | ImageItem | VideoItem | AudioItem
+
+interface BentoGridProps {
+  searchQuery?: string
+  activeFilter?: ContentType
+}
 
 // Sample data for demonstration
 const sampleItems: ContentItem[] = [
@@ -121,7 +129,7 @@ const sampleItems: ContentItem[] = [
 ]
 
 // Individual card components for each type
-function TextCard({ item }: { item: TextItem }) {
+function TextCard({ item, searchQuery = '' }: { item: TextItem; searchQuery?: string }) {
   return (
     <Card className="group h-full">
       <CardHeader className="pb-2">
@@ -143,13 +151,17 @@ function TextCard({ item }: { item: TextItem }) {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <h3 className="font-medium text-sm text-foreground mb-1.5">{item.title}</h3>
-        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">{item.content}</p>
+        <h3 className="font-medium text-sm text-foreground mb-1.5">
+          <HighlightText text={item.title} highlight={searchQuery} />
+        </h3>
+        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+          <HighlightText text={item.content} highlight={searchQuery} />
+        </p>
         {item.tags && (
           <div className="flex gap-1.5 mt-3">
             {item.tags.map(tag => (
               <span key={tag} className="text-xs px-2 py-0.5 rounded-md bg-secondary text-muted-foreground">
-                {tag}
+                <HighlightText text={tag} highlight={searchQuery} />
               </span>
             ))}
           </div>
@@ -159,7 +171,7 @@ function TextCard({ item }: { item: TextItem }) {
   )
 }
 
-function ImageCard({ item }: { item: ImageItem }) {
+function ImageCard({ item, searchQuery = '' }: { item: ImageItem; searchQuery?: string }) {
   return (
     <Card className="group h-full overflow-hidden">
       <div className="relative aspect-[4/3] overflow-hidden">
@@ -184,14 +196,16 @@ function ImageCard({ item }: { item: ImageItem }) {
         </div>
       </div>
       <CardContent className="p-3">
-        <h3 className="font-medium text-sm text-foreground">{item.title}</h3>
+        <h3 className="font-medium text-sm text-foreground">
+          <HighlightText text={item.title} highlight={searchQuery} />
+        </h3>
         <p className="text-xs text-muted-foreground mt-0.5">{item.createdAt}</p>
       </CardContent>
     </Card>
   )
 }
 
-function VideoCard({ item }: { item: VideoItem }) {
+function VideoCard({ item, searchQuery = '' }: { item: VideoItem; searchQuery?: string }) {
   const [isPlaying, setIsPlaying] = useState(false)
 
   return (
@@ -237,14 +251,16 @@ function VideoCard({ item }: { item: VideoItem }) {
         </div>
       </div>
       <CardContent className="p-3">
-        <h3 className="font-medium text-sm text-foreground">{item.title}</h3>
+        <h3 className="font-medium text-sm text-foreground">
+          <HighlightText text={item.title} highlight={searchQuery} />
+        </h3>
         <p className="text-xs text-muted-foreground mt-0.5">{item.createdAt}</p>
       </CardContent>
     </Card>
   )
 }
 
-function AudioCard({ item }: { item: AudioItem }) {
+function AudioCard({ item, searchQuery = '' }: { item: AudioItem; searchQuery?: string }) {
   const [isPlaying, setIsPlaying] = useState(false)
 
   return (
@@ -268,9 +284,13 @@ function AudioCard({ item }: { item: AudioItem }) {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <h3 className="font-medium text-sm text-foreground mb-0.5">{item.title}</h3>
+        <h3 className="font-medium text-sm text-foreground mb-0.5">
+          <HighlightText text={item.title} highlight={searchQuery} />
+        </h3>
         {item.artist && (
-          <p className="text-xs text-muted-foreground mb-3">{item.artist}</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            <HighlightText text={item.artist} highlight={searchQuery} />
+          </p>
         )}
 
         {/* Waveform visualization */}
@@ -309,61 +329,145 @@ function AudioCard({ item }: { item: AudioItem }) {
 }
 
 // Main Bento Grid component
-export function BentoGrid() {
+export function BentoGrid({ searchQuery = '', activeFilter = 'all' }: BentoGridProps) {
+  // Filter items based on search query AND content type
+  const filteredItems = useMemo(() => {
+    let items = sampleItems
+
+    // First filter by content type
+    if (activeFilter !== 'all') {
+      items = items.filter(item => item.type === activeFilter)
+    }
+
+    // Then filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      
+      items = items.filter(item => {
+        // Search in title
+        if (item.title.toLowerCase().includes(query)) return true
+        
+        // Search in type
+        if (item.type.toLowerCase().includes(query)) return true
+        
+        // Type-specific searches
+        if (item.type === 'text') {
+          if (item.content.toLowerCase().includes(query)) return true
+          if (item.tags?.some(tag => tag.toLowerCase().includes(query))) return true
+        }
+        
+        if (item.type === 'audio' && item.artist) {
+          if (item.artist.toLowerCase().includes(query)) return true
+        }
+        
+        return false
+      })
+    }
+
+    return items
+  }, [searchQuery, activeFilter])
+
   const renderItem = (item: ContentItem) => {
     switch (item.type) {
       case 'text':
-        return <TextCard key={item.id} item={item} />
+        return <TextCard key={item.id} item={item} searchQuery={searchQuery} />
       case 'image':
-        return <ImageCard key={item.id} item={item} />
+        return <ImageCard key={item.id} item={item} searchQuery={searchQuery} />
       case 'video':
-        return <VideoCard key={item.id} item={item} />
+        return <VideoCard key={item.id} item={item} searchQuery={searchQuery} />
       case 'audio':
-        return <AudioCard key={item.id} item={item} />
+        return <AudioCard key={item.id} item={item} searchQuery={searchQuery} />
       default:
         return null
     }
+  }
+
+  // Get filter label for display
+  const getFilterLabel = () => {
+    switch (activeFilter) {
+      case 'text': return 'Notes'
+      case 'image': return 'Images'
+      case 'video': return 'Videos'
+      case 'audio': return 'Audio'
+      default: return 'All Content'
+    }
+  }
+
+  // No results state
+  if (filteredItems.length === 0) {
+    return (
+      <div className="p-4">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-foreground">
+            {activeFilter !== 'all' ? getFilterLabel() : 'Your Content'}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {activeFilter !== 'all' 
+              ? `Showing ${getFilterLabel().toLowerCase()} only`
+              : 'All your notes, images, videos and audio in one place'
+            }
+          </p>
+        </div>
+        
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+            <Search className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-medium text-foreground mb-2">No results found</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            {searchQuery.trim() 
+              ? <>No {activeFilter !== 'all' ? getFilterLabel().toLowerCase() : 'content'} matches "<span className="font-medium text-foreground">{searchQuery}</span>".</>
+              : <>No {getFilterLabel().toLowerCase()} found.</>
+            }
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="p-4">
       {/* Section Header */}
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-foreground">Your Content</h2>
-        <p className="text-sm text-muted-foreground">All your notes, images, videos and audio in one place</p>
+        <h2 className="text-lg font-semibold text-foreground">
+          {searchQuery.trim() 
+            ? `Results for "${searchQuery}"` 
+            : activeFilter !== 'all' 
+              ? getFilterLabel()
+              : 'Your Content'
+          }
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {searchQuery.trim() || activeFilter !== 'all'
+            ? `Found ${filteredItems.length} item${filteredItems.length !== 1 ? 's' : ''}${activeFilter !== 'all' ? ` in ${getFilterLabel().toLowerCase()}` : ''}`
+            : 'All your notes, images, videos and audio in one place'
+          }
+        </p>
       </div>
 
-      {/* Bento Grid Layout */}
+      {/* Bento Grid Layout - Dynamic based on filtered items */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {/* First row - mixed sizes */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-2">
-          {renderItem(sampleItems[0])}
-        </div>
-        <div className="col-span-1">
-          {renderItem(sampleItems[1])}
-        </div>
-        <div className="col-span-1">
-          {renderItem(sampleItems[2])}
-        </div>
+        {filteredItems.map((item, index) => {
+          // Dynamic sizing based on content type and position
+          const getColSpan = () => {
+            if (searchQuery.trim() || activeFilter !== 'all') {
+              // When searching or filtering, use simpler layout
+              return 'col-span-1'
+            }
+            // Original bento layout for non-search view
+            if (index === 0) return 'col-span-1 md:col-span-2 lg:col-span-2'
+            if (index === 4) return 'col-span-1 row-span-2'
+            if (index === 5) return 'col-span-1 md:col-span-2'
+            if (index === 7) return 'col-span-1 md:col-span-2 lg:col-span-2'
+            return 'col-span-1'
+          }
 
-        {/* Second row */}
-        <div className="col-span-1">
-          {renderItem(sampleItems[3])}
-        </div>
-        <div className="col-span-1 row-span-2">
-          {renderItem(sampleItems[4])}
-        </div>
-        <div className="col-span-1 md:col-span-2">
-          {renderItem(sampleItems[5])}
-        </div>
-
-        {/* Third row */}
-        <div className="col-span-1">
-          {renderItem(sampleItems[6])}
-        </div>
-        <div className="col-span-1 md:col-span-2 lg:col-span-2">
-          {renderItem(sampleItems[7])}
-        </div>
+          return (
+            <div key={item.id} className={getColSpan()}>
+              {renderItem(item)}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
