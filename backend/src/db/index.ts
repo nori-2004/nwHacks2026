@@ -72,6 +72,16 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_video_frame_keywords_keyword ON video_frame_keywords(keyword);
   CREATE INDEX IF NOT EXISTS idx_video_frame_keywords_file_frame ON video_frame_keywords(file_id, frame_index);
   CREATE INDEX IF NOT EXISTS idx_file_tags_tag ON file_tags(tag);
+
+  -- Keyword embeddings table for semantic search
+  CREATE TABLE IF NOT EXISTS keyword_embeddings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    keyword TEXT UNIQUE NOT NULL,
+    embedding BLOB NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_keyword_embeddings_keyword ON keyword_embeddings(keyword);
 `)
 
 export default db

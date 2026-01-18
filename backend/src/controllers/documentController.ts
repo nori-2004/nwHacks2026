@@ -6,7 +6,9 @@ import {
   KeywordModel,
   MetadataModel,
 } from "../models/fileModel";
+import SearchService from "../services/searchService";
 
+const searchService = SearchService.getInstance();
 const OPENROUTER_API_KEY = process.env.OPEN_ROUTER_KEY || "";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -165,6 +167,11 @@ export async function processLocalDocument(req: Request, res: Response) {
         // Save keywords
         if (analysis.keywords && analysis.keywords.length > 0) {
           KeywordModel.addMany(fileId, analysis.keywords.map(k => k.trim()));
+          
+          // Index keywords for semantic search (run in background)
+          searchService.storeKeywordEmbeddings(analysis.keywords.map(k => k.trim())).catch(err => {
+            console.error('Failed to index document keywords:', err);
+          });
         }
 
         // Save metadata
@@ -306,6 +313,11 @@ export async function extractDocumentKeywords(req: Request, res: Response) {
         KeywordModel.deleteByFileId(fileId);
         if (analysis.keywords && analysis.keywords.length > 0) {
           KeywordModel.addMany(fileId, analysis.keywords.map(k => k.trim()));
+          
+          // Index keywords for semantic search (run in background)
+          searchService.storeKeywordEmbeddings(analysis.keywords.map(k => k.trim())).catch(err => {
+            console.error('Failed to index document keywords:', err);
+          });
         }
 
         // Save metadata

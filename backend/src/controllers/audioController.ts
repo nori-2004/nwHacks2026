@@ -7,8 +7,10 @@ import {
   KeywordModel,
   MetadataModel,
 } from "../models/fileModel";
+import SearchService from "../services/searchService";
 
 const apiKey = process.env.OPENAI_API_KEY || "";
+const searchService = SearchService.getInstance();
 
 // Helper to get mimetype from extension
 const getMimeType = (filepath: string): string => {
@@ -207,6 +209,11 @@ export const processLocalAudio = async (req: Request, res: Response) => {
       };
     });
 
+    // Index keywords for semantic search (run in background)
+    searchService.storeKeywordEmbeddings(Array.from(combinedKeywords)).catch(err => {
+      console.error('Failed to index audio keywords:', err);
+    });
+
     res.json({
       success: true,
       combinedKeywords: Array.from(combinedKeywords).join(", "),
@@ -360,6 +367,11 @@ export const extractAudioKeywords = async (req: Request, res: Response) => {
         filename: savedFile.filename,
         filepath: savedFile.filepath,
       };
+    });
+
+    // Index keywords for semantic search (run in background)
+    searchService.storeKeywordEmbeddings(Array.from(combinedKeywords)).catch(err => {
+      console.error('Failed to index audio keywords:', err);
     });
 
     res.json({

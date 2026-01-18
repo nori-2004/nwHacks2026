@@ -2,14 +2,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 import { FileGrid } from '@/components/FileGrid'
+import { SearchResults } from '@/components/SearchResults'
 import { api } from '@/lib/api'
-import type { FileRecord } from '@/lib/api'
+import type { FileRecord, SemanticSearchResult } from '@/lib/api'
 import { useDebounce } from '@/hooks/useDebounce'
 
-export type ContentType = 'all' | 'video' | 'image' | 'audio'
+export type ContentType = 'all' | 'video' | 'image' | 'audio' | 'text' | 'document'
 
 function App() {
   const [files, setFiles] = useState<FileRecord[]>([])
+  const [searchResults, setSearchResults] = useState<SemanticSearchResult[]>([])
+  const [isSemanticSearch, setIsSemanticSearch] = useState(false)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ContentType>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -20,6 +23,7 @@ function App() {
 
   const fetchFiles = useCallback(async () => {
     setLoading(true)
+    setIsSemanticSearch(false)
     try {
       const result = await api.getFiles(filter === 'all' ? undefined : filter)
       if (result.success) {
@@ -39,27 +43,46 @@ function App() {
     }
   }, [filter, debouncedSearchQuery, fetchFiles])
 
-  // Handle debounced search
+  // Handle debounced semantic search
   useEffect(() => {
     const performSearch = async () => {
       if (!debouncedSearchQuery.trim()) {
+        setSearchResults([])
+        setIsSemanticSearch(false)
         return // fetchFiles is called in the other effect
       }
       setLoading(true)
+      setIsSemanticSearch(true)
       try {
-        const result = await api.searchFiles({ q: debouncedSearchQuery, keyword: debouncedSearchQuery })
+        // Use semantic search for AI-powered results
+        const result = await api.semanticSearch({
+          q: debouncedSearchQuery,
+          topK: 20,
+          minSimilarity: 0.3,
+          type: filter === 'all' ? undefined : filter
+        })
         if (result.success) {
-          setFiles(result.files)
+          setSearchResults(result.results)
         }
       } catch (error) {
-        console.error('Search failed:', error)
+        console.error('Semantic search failed:', error)
+        // Fallback to keyword search
+        try {
+          const fallbackResult = await api.searchFiles({ q: debouncedSearchQuery, keyword: debouncedSearchQuery })
+          if (fallbackResult.success) {
+            setFiles(fallbackResult.files)
+            setIsSemanticSearch(false)
+          }
+        } catch (fallbackError) {
+          console.error('Fallback search also failed:', fallbackError)
+        }
       } finally {
         setLoading(false)
       }
     }
 
     performSearch()
-  }, [debouncedSearchQuery])
+  }, [debouncedSearchQuery, filter])
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
@@ -170,21 +193,42 @@ function App() {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">
                 {debouncedSearchQuery.trim() 
-                  ? `Results for "${debouncedSearchQuery}"`
+                  ? (
+                    <span className="flex items-center gap-2">
+                      {isSemanticSearch && (
+                        <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">AI Search</span>
+                      )}
+                      Results for "{debouncedSearchQuery}"
+                    </span>
+                  )
                   : filter === 'all' 
                     ? 'All Files' 
                     : `${filter.charAt(0).toUpperCase() + filter.slice(1)}s`
                 }
-                <span className="text-muted-foreground font-normal ml-2">({files.length})</span>
+                <span className="text-muted-foreground font-normal ml-2">
+                  ({isSemanticSearch ? searchResults.length : files.length})
+                </span>
               </h2>
             </div>
 
-            {/* File Grid */}
-            <FileGrid 
-              files={files} 
-              loading={loading} 
-              onRefresh={fetchFiles} 
-            />
+            {/* Search Results or File Grid */}
+            {isSemanticSearch && debouncedSearchQuery.trim() ? (
+              <SearchResults
+                results={searchResults}
+                query={debouncedSearchQuery}
+                loading={loading}
+                onFileSelect={(fileId) => {
+                  // Find file and open details - for now just log
+                  console.log('Selected file:', fileId)
+                }}
+              />
+            ) : (
+              <FileGrid 
+                files={files} 
+                loading={loading} 
+                onRefresh={fetchFiles} 
+              />
+            )}
           </div>
         </main>
       </div>

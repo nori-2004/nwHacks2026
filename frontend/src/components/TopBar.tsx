@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button'
 import { 
-  Search, 
   Upload,
   Sparkles,
   Tag,
@@ -10,11 +9,13 @@ import {
   SlidersHorizontal,
   X,
   Clock,
-  Trash2
+  Trash2,
+  Database
 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useSearchHistory } from '@/hooks/useSearchHistory'
 import { AddFileButton } from '@/components/AddFile'
+import { api } from '@/lib/api'
 
 interface TopBarProps {
   onSearch?: (query: string) => void
@@ -29,16 +30,32 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
   const [searchQuery, setSearchQuery] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const [showCommands, setShowCommands] = useState(false)
+  const [isIndexing, setIsIndexing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const commandsRef = useRef<HTMLDivElement>(null)
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory()
+
+  const handleIndexKeywords = async () => {
+    setIsIndexing(true)
+    try {
+      const result = await api.indexKeywords()
+      if (result.success) {
+        console.log(`Indexed ${result.indexed} keywords for semantic search`)
+      }
+    } catch (error) {
+      console.error('Failed to index keywords:', error)
+    } finally {
+      setIsIndexing(false)
+    }
+  }
 
   const commands = [
     { id: 'upload', label: 'Upload Files', icon: Upload, shortcut: '⌘U', action: onUpload },
     { id: 'process', label: 'Process with AI', icon: Sparkles, shortcut: '⌘P', action: onProcessAI },
     { id: 'tags', label: 'Add Tags', icon: Tag, shortcut: '⌘T', action: onAddTags },
     { id: 'folder', label: 'Open Folder', icon: FolderOpen, shortcut: '⌘O', action: onOpenFolder },
+    { id: 'index', label: isIndexing ? 'Indexing...' : 'Index for Search', icon: Database, shortcut: '⌘I', action: handleIndexKeywords },
   ]
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,11 +155,13 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
       {/* Search Bar */}
       <div className="flex-1 max-w-md" ref={dropdownRef}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
+            <Sparkles className="h-4 w-4 text-primary" />
+          </div>
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search... (⌘K)"
+            placeholder="AI Search... (⌘K)"
             value={searchQuery}
             onChange={handleSearch}
             onFocus={() => setShowHistory(true)}

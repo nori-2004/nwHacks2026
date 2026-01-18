@@ -27,6 +27,64 @@ export interface FrameKeyword {
   confidence?: number
 }
 
+// Semantic Search Types
+export interface MatchedKeyword {
+  keyword: string
+  similarity: number
+}
+
+export interface MatchedFrame {
+  frame_index: number
+  timestamp?: number
+  keywords: string[]
+}
+
+export interface SemanticSearchResult {
+  file_id: number
+  filename: string
+  filepath: string
+  filetype: string
+  size?: number
+  mimetype?: string
+  created_at?: string
+  matchedKeywords: MatchedKeyword[]
+  metadata?: Record<string, string>
+  keywords?: string[]
+  // Video-specific
+  matchedFrames?: MatchedFrame[]
+  // Audio-specific
+  transcription?: string
+  language?: string
+  duration?: number
+  // Document-specific
+  summary?: string
+  wordCount?: number
+}
+
+export interface SemanticSearchResponse {
+  success: boolean
+  query: string
+  topK: number
+  minSimilarity: number
+  totalResults: number
+  results: SemanticSearchResult[]
+}
+
+export interface SimilarKeywordsResponse {
+  success: boolean
+  query: string
+  topK: number
+  similarKeywords: MatchedKeyword[]
+}
+
+export interface SearchStatsResponse {
+  success: boolean
+  stats: {
+    totalKeywords: number
+    indexedKeywords: number
+  }
+}
+
 export interface VideoProcessResult {
   success: boolean
   combinedKeywords: string
@@ -263,6 +321,45 @@ export const api = {
   // Remove tag
   async removeTag(id: number, tag: string): Promise<{ success: boolean }> {
     const res = await fetch(`${API_BASE}/files/${id}/tags/${tag}`, { method: 'DELETE' })
+    return res.json()
+  },
+
+  // Semantic Search - AI-powered search using embeddings
+  async semanticSearch(params: {
+    q: string
+    topK?: number
+    minSimilarity?: number
+    type?: string
+  }): Promise<SemanticSearchResponse> {
+    const searchParams = new URLSearchParams()
+    searchParams.set('q', params.q)
+    if (params.topK) searchParams.set('topK', params.topK.toString())
+    if (params.minSimilarity) searchParams.set('minSimilarity', params.minSimilarity.toString())
+    if (params.type) searchParams.set('type', params.type)
+    
+    const res = await fetch(`${API_BASE}/search?${searchParams}`)
+    return res.json()
+  },
+
+  // Find similar keywords
+  async findSimilarKeywords(query: string, topK?: number): Promise<SimilarKeywordsResponse> {
+    const searchParams = new URLSearchParams()
+    searchParams.set('q', query)
+    if (topK) searchParams.set('topK', topK.toString())
+    
+    const res = await fetch(`${API_BASE}/search/keywords?${searchParams}`)
+    return res.json()
+  },
+
+  // Index all existing keywords for semantic search
+  async indexKeywords(): Promise<{ success: boolean; indexed: number; message: string }> {
+    const res = await fetch(`${API_BASE}/search/index`, { method: 'POST' })
+    return res.json()
+  },
+
+  // Get search stats (indexed vs total keywords)
+  async getSearchStats(): Promise<SearchStatsResponse> {
+    const res = await fetch(`${API_BASE}/search/stats`)
     return res.json()
   }
 }
