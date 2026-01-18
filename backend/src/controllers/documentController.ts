@@ -80,7 +80,7 @@ For summary:
         { role: "user", content: content.slice(0, 30000) } // Limit content to avoid token limits
       ],
       temperature: 0.3,
-      max_tokens: 1000
+      max_tokens: 2000
     })
   });
 
