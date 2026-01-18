@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { 
   Search, 
-  Plus,
   Upload,
   Sparkles,
   Tag,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useSearchHistory } from '@/hooks/useSearchHistory'
+import { AddFileButton } from '@/components/AddFile'
 
 interface TopBarProps {
   onSearch?: (query: string) => void
@@ -22,9 +22,10 @@ interface TopBarProps {
   onProcessAI?: () => void
   onAddTags?: () => void
   onOpenFolder?: () => void
+  onFilesAdded?: () => void
 }
 
-export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolder }: TopBarProps) {
+export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolder, onFilesAdded }: TopBarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const [showCommands, setShowCommands] = useState(false)
@@ -251,10 +252,7 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
           Filters
         </Button>
 
-        <Button size="sm" className="h-8" onClick={onUpload}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Files
-        </Button>
+        <AddFileButton onComplete={onFilesAdded || (() => {})} />
       </div>
     </header>
   )

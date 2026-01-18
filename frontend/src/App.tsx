@@ -152,6 +152,7 @@ function App() {
           onProcessAI={handleProcessAI}
           onAddTags={handleAddTags}
           onOpenFolder={handleOpenFolder}
+          onFilesAdded={fetchFiles}
         />
 
         {/* Content Area */}
