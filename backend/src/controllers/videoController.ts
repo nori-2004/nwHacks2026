@@ -356,11 +356,7 @@ export const extractKeywords = async (req: Request, res: Response) => {
       };
     });
 
-    filePaths.forEach((path) => {
-      if (fs.existsSync(path)) {
-        fs.unlinkSync(path);
-      }
-    });
+    // Keep uploaded files so they can be viewed later
 
     res.json({
       success: true,
@@ -371,12 +367,7 @@ export const extractKeywords = async (req: Request, res: Response) => {
       totalVideosProcessed: videoResults.length,
     });
   } catch (error) {
-    // Clean up all uploaded files on error
-    filePaths.forEach((path) => {
-      if (fs.existsSync(path)) {
-        fs.unlinkSync(path);
-      }
-    });
+    // Keep uploaded files even on error so they can be debugged or retried
 
     console.error("Video processing error:", error);
     res.status(500).json({

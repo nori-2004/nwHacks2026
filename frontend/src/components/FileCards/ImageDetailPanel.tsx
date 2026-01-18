@@ -19,7 +19,7 @@ export function ImageDetailPanel({ file, onClose }: ImageDetailPanelProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
-  const imageSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  const imageSrc = `media://${file.filepath.replace(/\\/g, '/')}`
   const description = file.metadata?.description
 
   const formatSize = (bytes?: number) => {

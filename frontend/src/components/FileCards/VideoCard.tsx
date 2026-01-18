@@ -30,8 +30,8 @@ export function VideoCard({ file, onDelete, onSelect }: VideoCardProps) {
     }
   }
 
-  // Convert filepath to file:// URL for video playback
-  const videoSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  // Convert filepath to media:// URL for video playback
+  const videoSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   // Get filename without extension
   const displayName = file.filename.replace(/\.[^/.]+$/, '')

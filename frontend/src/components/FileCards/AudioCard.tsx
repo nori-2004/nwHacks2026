@@ -29,8 +29,8 @@ export function AudioCard({ file, onDelete, onSelect }: AudioCardProps) {
     }
   }
 
-  // Convert filepath to file:// URL for audio playback
-  const audioSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  // Convert filepath to media:// URL for audio playback
+  const audioSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   // Get filename without extension
   const displayName = file.filename.replace(/\.[^/.]+$/, '')

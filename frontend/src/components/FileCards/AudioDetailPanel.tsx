@@ -28,7 +28,7 @@ export function AudioDetailPanel({ file, onClose }: AudioDetailPanelProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
-  const audioSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  const audioSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   // Get metadata
   const transcription = file.metadata?.transcription
