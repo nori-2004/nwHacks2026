@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 import { FileGrid } from '@/components/FileGrid'
 import { SearchResults } from '@/components/SearchResults'
+import { CreateNoteModal } from '@/components/CreateNoteModal'
 import { api } from '@/lib/api'
 import type { FileRecord, SemanticSearchResult } from '@/lib/api'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -17,6 +18,7 @@ function App() {
   const [filter, setFilter] = useState<ContentType>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isCreateNoteModalOpen, setIsCreateNoteModalOpen] = useState(false)
   
   // Debounce search for performance (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
@@ -93,7 +95,12 @@ function App() {
   }
 
   const handleCreateNote = () => {
-    console.log('Create new note')
+    setIsCreateNoteModalOpen(true)
+  }
+
+  const handleNoteCreated = (file: FileRecord) => {
+    // Add the new file to the list and refresh
+    fetchFiles()
   }
 
   const handleCreateFolder = () => {
@@ -232,6 +239,13 @@ function App() {
           </div>
         </main>
       </div>
+
+      {/* Create Note Modal */}
+      <CreateNoteModal
+        isOpen={isCreateNoteModalOpen}
+        onClose={() => setIsCreateNoteModalOpen(false)}
+        onCreated={handleNoteCreated}
+      />
     </div>
   )
 }

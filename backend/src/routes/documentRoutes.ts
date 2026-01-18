@@ -4,10 +4,15 @@ import {
   processLocalDocument, 
   uploadDocumentOnly, 
   extractDocumentKeywords,
-  getDocumentContent 
+  getDocumentContent,
+  updateDocumentContent,
+  createNewDocument
 } from '../controllers/documentController'
 
 const router = Router()
+
+// Create a new document
+router.post('/create', createNewDocument)
 
 // Process documents from local filepaths (recommended for Electron - no file duplication)
 router.post('/process', processLocalDocument)
@@ -20,5 +25,8 @@ router.post('/keywords', uploadDocument.array('documents', 10), extractDocumentK
 
 // Get document content by ID
 router.get('/:id/content', getDocumentContent)
+
+// Update document content by ID
+router.put('/:id/content', updateDocumentContent)
 
 export default router

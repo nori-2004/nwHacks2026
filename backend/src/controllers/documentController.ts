@@ -12,6 +12,9 @@ const searchService = SearchService.getInstance();
 const OPENROUTER_API_KEY = process.env.OPEN_ROUTER_KEY || "";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+// Get uploads directory path
+const UPLOADS_DIR = path.join(__dirname, '../../uploads');
+
 interface DocumentAnalysisResult {
   filepath: string;
   filename: string;
@@ -114,6 +117,80 @@ For summary:
     keywords: [],
     summary: responseText.trim()
   };
+}
+
+// Create a new document file
+export async function createNewDocument(req: Request, res: Response) {
+  try {
+    const { filename, content = '', fileType = 'md' } = req.body;
+
+    if (!filename) {
+      return res.status(400).json({ error: "filename is required" });
+    }
+
+    // Sanitize filename and ensure proper extension
+    let sanitizedFilename = filename.replace(/[<>:"/\\|?*]/g, '').trim();
+    
+    // Add extension if not present
+    const ext = fileType === 'txt' ? '.txt' : '.md';
+    if (!sanitizedFilename.endsWith(ext)) {
+      sanitizedFilename = sanitizedFilename.replace(/\.(md|txt)$/i, '') + ext;
+    }
+
+    // Ensure uploads directory exists
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+
+    // Generate unique filename if file already exists
+    let finalFilename = sanitizedFilename;
+    let filepath = path.join(UPLOADS_DIR, finalFilename);
+    let counter = 1;
+    
+    while (fs.existsSync(filepath)) {
+      const nameWithoutExt = sanitizedFilename.replace(/\.(md|txt)$/i, '');
+      finalFilename = `${nameWithoutExt} (${counter})${ext}`;
+      filepath = path.join(UPLOADS_DIR, finalFilename);
+      counter++;
+    }
+
+    // Write the file
+    fs.writeFileSync(filepath, content, 'utf-8');
+
+    // Determine file type for database
+    const docType = getDocumentType(filepath);
+    const dbFileType = docType === 'markdown' ? 'document' : 'text';
+
+    // Create database record
+    const fileRecord = FileModel.create({
+      filename: finalFilename,
+      filepath: filepath,
+      filetype: dbFileType,
+      size: Buffer.byteLength(content, 'utf-8'),
+      mimetype: fileType === 'txt' ? 'text/plain' : 'text/markdown',
+    });
+
+    // Set initial metadata
+    const wordCount = content.split(/\s+/).filter((w: string) => w.length > 0).length;
+    const characterCount = content.length;
+    MetadataModel.set(fileRecord.id!, 'word_count', wordCount.toString());
+    MetadataModel.set(fileRecord.id!, 'character_count', characterCount.toString());
+    MetadataModel.set(fileRecord.id!, 'document_type', docType);
+
+    res.status(201).json({
+      success: true,
+      file: fileRecord,
+      wordCount,
+      characterCount
+    });
+
+  } catch (error) {
+    console.error("Create document error:", error);
+    res.status(500).json({
+      error: "Failed to create document",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 }
 
 // Process document from local filepath (for Electron - no file duplication)
@@ -354,6 +431,60 @@ export async function extractDocumentKeywords(req: Request, res: Response) {
     console.error("Document keyword extraction error:", error);
     res.status(500).json({
       error: "Failed to extract keywords from documents",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+}
+
+// Update document content by file ID
+export async function updateDocumentContent(req: Request, res: Response) {
+  console.log('updateDocumentContent called with id:', req.params.id);
+  console.log('Content length:', req.body?.content?.length);
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+    const fileId = parseInt(id);
+
+    if (isNaN(fileId)) {
+      return res.status(400).json({ error: "Invalid file ID" });
+    }
+
+    if (typeof content !== 'string') {
+      return res.status(400).json({ error: "Content must be a string" });
+    }
+
+    const fileRecord = FileModel.getById(fileId);
+
+    if (!fileRecord) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    // Validate file type
+    const docType = getDocumentType(fileRecord.filepath);
+    if (docType === 'unknown') {
+      return res.status(400).json({ error: "File is not a supported document type" });
+    }
+
+    // Write content to file
+    fs.writeFileSync(fileRecord.filepath, content, 'utf-8');
+
+    // Update metadata
+    const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
+    const characterCount = content.length;
+    MetadataModel.set(fileId, 'word_count', wordCount.toString());
+    MetadataModel.set(fileId, 'character_count', characterCount.toString());
+
+    res.json({
+      success: true,
+      message: "Document saved successfully",
+      wordCount,
+      characterCount
+    });
+
+  } catch (error) {
+    console.error("Update document content error:", error);
+    res.status(500).json({
+      error: "Failed to save document",
       details: error instanceof Error ? error.message : "Unknown error",
     });
   }

@@ -290,6 +290,26 @@ export const api = {
     return res.json()
   },
 
+  // Save document content
+  async saveDocumentContent(id: number, content: string): Promise<{ success: boolean; message?: string; wordCount?: number; characterCount?: number; error?: string }> {
+    const res = await fetch(`${API_BASE}/document/${id}/content`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    })
+    return res.json()
+  },
+
+  // Create a new document
+  async createDocument(filename: string, content: string = '', fileType: 'md' | 'txt' = 'md'): Promise<{ success: boolean; file?: FileRecord; wordCount?: number; characterCount?: number; error?: string }> {
+    const res = await fetch(`${API_BASE}/document/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, content, fileType })
+    })
+    return res.json()
+  },
+
   // Search files
   async searchFiles(params: { q?: string; keyword?: string; tag?: string; includeFrames?: boolean }): Promise<{ success: boolean; files: FileRecord[] }> {
     const searchParams = new URLSearchParams()
