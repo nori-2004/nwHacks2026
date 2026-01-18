@@ -15,10 +15,9 @@ export function ActionButtons({
   onUploadOnly, 
   onAnalyzeWithAI 
 }: ActionButtonsProps) {
-  const isAIDisabled = loading || 
-    selectedType === 'document' || 
-    selectedType === 'image' || 
-    selectedType === 'audio'
+  // AI analysis is available for videos, audio, and documents
+  const isAISupported = selectedType === 'video' || selectedType === 'audio' || selectedType === 'document' || selectedType === 'all'
+  const isAIDisabled = loading || !isAISupported
 
   return (
     <div className="space-y-2 pt-2 border-t border-border">
@@ -49,8 +48,8 @@ export function ActionButtons({
           <Sparkles className="h-4 w-4" />
         )}
         Analyze with AI
-        {selectedType !== 'video' && selectedType !== 'all' && (
-          <span className="text-xs text-muted-foreground ml-auto">(videos only)</span>
+        {!isAISupported && (
+          <span className="text-xs text-muted-foreground ml-auto">(images not supported)</span>
         )}
       </Button>
     </div>

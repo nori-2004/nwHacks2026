@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
-import { VideoGrid } from '@/components/VideoGrid'
+import { FileGrid } from '@/components/FileGrid'
 import { api } from '@/lib/api'
 import type { FileRecord } from '@/lib/api'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -180,7 +180,7 @@ function App() {
             </div>
 
             {/* File Grid */}
-            <VideoGrid 
+            <FileGrid 
               files={files} 
               loading={loading} 
               onRefresh={fetchFiles} 

@@ -52,6 +52,53 @@ export interface VideoProcessResult {
   totalVideosProcessed: number
 }
 
+export interface AudioProcessResult {
+  success: boolean
+  combinedKeywords: string
+  combinedKeywordsArray: string[]
+  audioFiles: {
+    filepath: string
+    filename: string
+    transcription: string
+    keywords: string[]
+    language?: string
+    duration?: number
+  }[]
+  savedFiles: {
+    id: number
+    filename: string
+    filepath: string
+  }[]
+  totalAudioProcessed: number
+}
+
+export interface DocumentProcessResult {
+  success: boolean
+  processed: number
+  failed: number
+  results: {
+    filepath: string
+    filename: string
+    content: string
+    summary: string
+    keywords: string[]
+    wordCount: number
+    characterCount: number
+  }[]
+  errors?: { filepath: string; error: string }[]
+}
+
+export interface DocumentContentResult {
+  success: boolean
+  file: FileRecord
+  content: string
+  summary: string
+  keywords: string[]
+  wordCount: number
+  characterCount: number
+  documentType: string
+}
+
 // File operations
 export const api = {
   // Get all files
@@ -126,6 +173,62 @@ export const api = {
       method: 'POST',
       body: formData
     })
+    return res.json()
+  },
+
+  // Process audio files for keywords (AI analysis - Electron mode)
+  async processAudio(filepaths: string[]): Promise<AudioProcessResult> {
+    const res = await fetch(`${API_BASE}/audio/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepaths })
+    })
+    return res.json()
+  },
+
+  // Upload and process audio (browser mode)
+  async uploadAndProcessAudio(files: File[]): Promise<AudioProcessResult> {
+    const formData = new FormData()
+    files.forEach(file => formData.append('audio', file))
+    
+    const res = await fetch(`${API_BASE}/audio/keywords`, {
+      method: 'POST',
+      body: formData
+    })
+    return res.json()
+  },
+
+  // Process documents for keywords (AI analysis - Electron mode)
+  async processDocuments(filepaths: string[]): Promise<DocumentProcessResult> {
+    console.log('Processing documents:', filepaths)
+    const res = await fetch(`${API_BASE}/document/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepaths })
+    })
+    const data = await res.json()
+    console.log('Document process result:', data)
+    return data
+  },
+
+  // Upload and process documents (browser mode)
+  async uploadAndProcessDocuments(files: File[]): Promise<DocumentProcessResult> {
+    console.log('Uploading and processing documents:', files.map(f => f.name))
+    const formData = new FormData()
+    files.forEach(file => formData.append('documents', file))
+    
+    const res = await fetch(`${API_BASE}/document/keywords`, {
+      method: 'POST',
+      body: formData
+    })
+    const data = await res.json()
+    console.log('Document upload result:', data)
+    return data
+  },
+
+  // Get document content with analysis
+  async getDocumentContent(id: number): Promise<DocumentContentResult> {
+    const res = await fetch(`${API_BASE}/document/${id}/content`)
     return res.json()
   },
 

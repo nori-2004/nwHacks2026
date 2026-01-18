@@ -61,19 +61,18 @@ export const uploadAudio = multer({
   limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
 })
 
-// Document upload
+// Document upload (txt and md only)
 export const uploadDocument = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /pdf|doc|docx|txt|md|rtf|odt|xls|xlsx|ppt|pptx|csv/
+    const allowedTypes = /txt|md/
     const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase())
     if (ext || 
-        file.mimetype.includes('pdf') || 
-        file.mimetype.includes('document') ||
-        file.mimetype.includes('text')) {
+        file.mimetype === 'text/plain' ||
+        file.mimetype === 'text/markdown') {
       cb(null, true)
     } else {
-      cb(new Error('Only document files are allowed'))
+      cb(new Error('Only .txt and .md files are allowed'))
     }
   },
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
