@@ -13,7 +13,7 @@ import {
   VideoDetailPanel,
   AudioDetailPanel,
   ImageDetailPanel,
-  DocumentDetailPanel
+  DocumentEditor
 } from './FileCards'
 
 interface FileGridProps {
@@ -26,8 +26,15 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
   const [selectedFile, setSelectedFile] = useState<FileRecord | null>(null)
   const [detailedFile, setDetailedFile] = useState<FileRecord | null>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
+  const [documentEditorFile, setDocumentEditorFile] = useState<FileRecord | null>(null)
 
   const handleSelect = async (file: FileRecord) => {
+    // For documents, open full-screen editor instead of sidebar
+    if (file.filetype === 'document' || file.filetype === 'text') {
+      setDocumentEditorFile(file)
+      return
+    }
+
     setSelectedFile(file)
     setLoadingDetails(true)
     try {
@@ -51,6 +58,9 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
         setSelectedFile(null)
         setDetailedFile(null)
       }
+      if (documentEditorFile?.id === id) {
+        setDocumentEditorFile(null)
+      }
     } catch (error) {
       console.error('Failed to delete file:', error)
     }
@@ -59,6 +69,10 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
   const closeDetail = () => {
     setSelectedFile(null)
     setDetailedFile(null)
+  }
+
+  const closeDocumentEditor = () => {
+    setDocumentEditorFile(null)
   }
 
   // Render the appropriate card based on file type
@@ -84,7 +98,7 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
     }
   }
 
-  // Render the appropriate detail panel based on file type
+  // Render the appropriate detail panel based on file type (not for documents)
   const renderDetailPanel = () => {
     if (!selectedFile || !detailedFile) return null
 
@@ -101,6 +115,7 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
       )
     }
 
+    // Documents use full-screen editor, not sidebar
     switch (detailedFile.filetype) {
       case 'video':
         return <VideoDetailPanel {...props} />
@@ -110,9 +125,9 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
         return <ImageDetailPanel {...props} />
       case 'document':
       case 'text':
-        return <DocumentDetailPanel {...props} />
+        return null // Handled by DocumentEditor
       default:
-        return <DocumentDetailPanel {...props} />
+        return null
     }
   }
 
@@ -152,8 +167,19 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
         {files.map(renderCard)}
       </div>
 
-      {/* Detail Panel */}
+      {/* Detail Panel (for non-document files) */}
       {selectedFile && renderDetailPanel()}
+
+      {/* Full-screen Document Editor */}
+      {documentEditorFile && (
+        <DocumentEditor
+          file={documentEditorFile}
+          onClose={closeDocumentEditor}
+          onSave={() => {
+            onRefresh()
+          }}
+        />
+      )}
     </div>
   )
 }
