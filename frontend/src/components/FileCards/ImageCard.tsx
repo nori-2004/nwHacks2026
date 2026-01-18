@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import type { FileRecord } from '@/lib/api'
+import { getMediaUrl } from '@/lib/utils'
 
 interface ImageCardProps {
   file: FileRecord
@@ -9,8 +10,8 @@ interface ImageCardProps {
 }
 
 export function ImageCard({ file, onDelete, onSelect }: ImageCardProps) {
-  // Convert filepath to media:// URL for image display
-  const imageSrc = `media://${file.filepath.replace(/\\/g, '/')}`
+  // Convert filepath to URL for image display
+  const imageSrc = getMediaUrl(file.filepath)
 
   // Get filename without extension and truncate
   const displayName = file.filename.replace(/\.[^/.]+$/, '')

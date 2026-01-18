@@ -13,6 +13,7 @@ import {
   VolumeX
 } from 'lucide-react'
 import type { FileRecord } from '@/lib/api'
+import { getMediaUrl } from '@/lib/utils'
 
 interface AudioDetailPanelProps {
   file: FileRecord
@@ -28,7 +29,7 @@ export function AudioDetailPanel({ file, onClose }: AudioDetailPanelProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
-  const audioSrc = `media://${file.filepath.replace(/\\/g, '/')}`
+  const audioSrc = getMediaUrl(file.filepath)
 
   // Get metadata
   const transcription = file.metadata?.transcription

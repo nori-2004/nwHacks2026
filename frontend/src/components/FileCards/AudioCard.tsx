@@ -6,6 +6,7 @@ import {
   Trash2
 } from 'lucide-react'
 import type { FileRecord } from '@/lib/api'
+import { getMediaUrl } from '@/lib/utils'
 
 interface AudioCardProps {
   file: FileRecord
@@ -29,8 +30,8 @@ export function AudioCard({ file, onDelete, onSelect }: AudioCardProps) {
     }
   }
 
-  // Convert filepath to media:// URL for audio playback
-  const audioSrc = `media://${file.filepath.replace(/\\/g, '/')}`
+  // Convert filepath to URL for audio playback
+  const audioSrc = getMediaUrl(file.filepath)
 
   // Get filename without extension
   const displayName = file.filename.replace(/\.[^/.]+$/, '')

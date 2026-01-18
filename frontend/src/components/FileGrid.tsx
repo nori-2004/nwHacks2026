@@ -39,16 +39,8 @@ function getItemSize(file: FileRecord): 'tiny' | 'small' | 'medium' | 'large' {
     return 'small'
   }
   
-  // Videos: vary based on duration and filename for variety
+  // Videos: always small for compact grid
   if (file.filetype === 'video') {
-    const duration = file.metadata?.duration ? parseFloat(file.metadata.duration) : 0
-    const charSum = file.filename.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-    if (duration > 120) return 'large' // > 2 min
-    if (duration > 30) return 'medium' // > 30 sec
-    // Use filename hash for more variety
-    const hash = (file.id + charSum) % 4
-    if (hash === 0) return 'large'
-    if (hash === 1 || hash === 2) return 'medium'
     return 'small'
   }
   

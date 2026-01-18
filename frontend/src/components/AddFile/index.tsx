@@ -58,7 +58,7 @@ export function AddFileButton({ onComplete }: AddFileButtonProps) {
           />
           
           {/* Menu Card */}
-          <Card className="absolute top-full left-0 mt-2 w-80 z-50 shadow-lg">
+          <Card className="absolute top-full right-0 mt-2 w-80 z-50 shadow-lg">
             <div className="p-2">
               {/* Step 1: Choose file type */}
               {!selectedType && (

@@ -9,6 +9,7 @@ import {
   HardDrive
 } from 'lucide-react'
 import type { FileRecord } from '@/lib/api'
+import { getMediaUrl } from '@/lib/utils'
 
 interface ImageDetailPanelProps {
   file: FileRecord
@@ -19,7 +20,7 @@ export function ImageDetailPanel({ file, onClose }: ImageDetailPanelProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
-  const imageSrc = `media://${file.filepath.replace(/\\/g, '/')}`
+  const imageSrc = getMediaUrl(file.filepath)
   const description = file.metadata?.description
 
   const formatSize = (bytes?: number) => {
