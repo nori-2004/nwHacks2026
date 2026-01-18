@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { 
   Loader2,
   Files
@@ -22,11 +22,80 @@ interface FileGridProps {
   onRefresh: () => void
 }
 
+// Calculate size class for masonry layout
+function getItemSize(file: FileRecord): 'tiny' | 'small' | 'medium' | 'large' {
+  // Audio is always tiny (compact bar)
+  if (file.filetype === 'audio') {
+    return 'tiny'
+  }
+  
+  // Images: vary based on filename hash for visual interest
+  if (file.filetype === 'image') {
+    // Use filename characters + id to create more varied sizes
+    const charSum = file.filename.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+    const hash = (file.id + charSum) % 5
+    if (hash === 0 || hash === 1) return 'large'
+    if (hash === 2 || hash === 3) return 'medium'
+    return 'small'
+  }
+  
+  // Videos: vary based on duration and filename for variety
+  if (file.filetype === 'video') {
+    const duration = file.metadata?.duration ? parseFloat(file.metadata.duration) : 0
+    const charSum = file.filename.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+    if (duration > 120) return 'large' // > 2 min
+    if (duration > 30) return 'medium' // > 30 sec
+    // Use filename hash for more variety
+    const hash = (file.id + charSum) % 4
+    if (hash === 0) return 'large'
+    if (hash === 1 || hash === 2) return 'medium'
+    return 'small'
+  }
+  
+  // Documents/text: vary based on content and id for visual interest
+  if (file.filetype === 'document' || file.filetype === 'text') {
+    const keywordCount = file.keywords?.length || 0
+    const wordCount = file.metadata?.word_count ? parseInt(file.metadata.word_count) : 0
+    
+    // Larger only if lots of content
+    if (wordCount > 800 || keywordCount > 6) return 'large'
+    if (wordCount > 300 || keywordCount > 3) return 'medium'
+    
+    // Use file id for variety - prefer small/medium over large
+    const hash = file.id % 5
+    if (hash === 0) return 'large'
+    if (hash === 1 || hash === 2) return 'medium'
+    return 'small'
+  }
+  
+  return 'small'
+}
+
 export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
   const [selectedFile, setSelectedFile] = useState<FileRecord | null>(null)
   const [detailedFile, setDetailedFile] = useState<FileRecord | null>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [documentEditorFile, setDocumentEditorFile] = useState<FileRecord | null>(null)
+
+  // Distribute files into columns for masonry layout
+  const columns = useMemo(() => {
+    const numColumns = 4 // We'll use CSS to adjust for responsive
+    const cols: FileRecord[][] = Array.from({ length: numColumns }, () => [])
+    const colHeights: number[] = Array(numColumns).fill(0)
+    
+    files.forEach(file => {
+      // Find the shortest column
+      const shortestCol = colHeights.indexOf(Math.min(...colHeights))
+      cols[shortestCol].push(file)
+      
+      // Estimate height based on size class
+      const size = getItemSize(file)
+      const heightEstimate = size === 'large' ? 3 : size === 'medium' ? 2 : size === 'small' ? 1 : 0.3
+      colHeights[shortestCol] += heightEstimate
+    })
+    
+    return cols
+  }, [files])
 
   const handleSelect = async (file: FileRecord) => {
     // For documents, open full-screen editor instead of sidebar
@@ -75,27 +144,60 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
     setDocumentEditorFile(null)
   }
 
-  // Render the appropriate card based on file type
+  // Render the appropriate card based on file type with size class
   const renderCard = (file: FileRecord) => {
+    const size = getItemSize(file)
     const props = {
       file,
       onDelete: handleDelete,
       onSelect: handleSelect
     }
 
-    switch (file.filetype) {
-      case 'video':
-        return <VideoCard key={file.id} {...props} />
-      case 'audio':
-        return <AudioCard key={file.id} {...props} />
-      case 'image':
-        return <ImageCard key={file.id} {...props} />
-      case 'document':
-      case 'text':
-        return <DocumentCard key={file.id} {...props} />
-      default:
-        return <DocumentCard key={file.id} {...props} />
+    // Get size-specific wrapper class
+    const getSizeClass = () => {
+      if (file.filetype === 'audio') {
+        // Audio is compact bar - no aspect ratio needed
+        return 'h-16'
+      }
+      if (file.filetype === 'image' || file.filetype === 'video') {
+        // Images and videos scale based on size with more variation
+        switch (size) {
+          case 'large': return 'aspect-[4/5]'
+          case 'medium': return 'aspect-[4/3]'
+          default: return 'aspect-video'
+        }
+      }
+      // Documents: use fixed heights to prevent blank space
+      switch (size) {
+        case 'large': return 'h-[240px]'
+        case 'medium': return 'h-[200px]'
+        default: return 'h-[160px]'
+      }
     }
+
+    const wrapperClass = getSizeClass()
+
+    const card = (() => {
+      switch (file.filetype) {
+        case 'video':
+          return <VideoCard key={file.id} {...props} />
+        case 'audio':
+          return <AudioCard key={file.id} {...props} />
+        case 'image':
+          return <ImageCard key={file.id} {...props} />
+        case 'document':
+        case 'text':
+          return <DocumentCard key={file.id} {...props} />
+        default:
+          return <DocumentCard key={file.id} {...props} />
+      }
+    })()
+
+    return (
+      <div key={file.id} className={`mb-4 ${wrapperClass}`}>
+        {card}
+      </div>
+    )
   }
 
   // Render the appropriate detail panel based on file type (not for documents)
@@ -162,9 +264,13 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
 
   return (
     <div className="relative">
-      {/* File Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {files.map(renderCard)}
+      {/* Masonry Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+        {columns.map((column, colIndex) => (
+          <div key={colIndex} className="flex flex-col">
+            {column.map(renderCard)}
+          </div>
+        ))}
       </div>
 
       {/* Detail Panel (for non-document files) */}

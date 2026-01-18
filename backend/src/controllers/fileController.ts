@@ -42,7 +42,22 @@ export const getAllFiles = (req: Request, res: Response) => {
   try {
     const { type } = req.query
     const files = type ? FileModel.getByType(type as string) : FileModel.getAll()
-    res.json({ success: true, files })
+    
+    // Enrich files with metadata, keywords, and tags
+    const enrichedFiles = files.map(file => {
+      const metadata = MetadataModel.getByFileId(file.id!)
+      const keywords = KeywordModel.getByFileId(file.id!)
+      const tags = TagModel.getByFileId(file.id!)
+      
+      return {
+        ...file,
+        metadata: metadata.reduce((acc, m) => ({ ...acc, [m.key]: m.value }), {}),
+        keywords,
+        tags
+      }
+    })
+    
+    res.json({ success: true, files: enrichedFiles })
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch files', details: (error as Error).message })
   }

@@ -60,7 +60,7 @@ export function DocumentCard({ file, onDelete, onSelect }: DocumentCardProps) {
 
   return (
     <Card 
-      className="group overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 hover:shadow-lg transition-all duration-200 bg-[#fefefe] dark:bg-[#1a1a1a]"
+      className="group overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 hover:shadow-lg transition-all duration-200 bg-[#fefefe] dark:bg-[#1a1a1a] h-full flex flex-col"
       onClick={() => onSelect(file)}
     >
       {/* Header - Title and File Type */}
@@ -98,8 +98,8 @@ export function DocumentCard({ file, onDelete, onSelect }: DocumentCardProps) {
         </div>
       </div>
 
-      {/* Content Preview Area */}
-      <div className="px-4 py-3 min-h-[140px] max-h-[180px] overflow-hidden relative">
+      {/* Content Preview Area - fills remaining space */}
+      <div className="px-4 py-3 flex-1 overflow-hidden relative">
         {isLoading ? (
           <div className="space-y-2 animate-pulse">
             <div className="h-3 bg-muted rounded w-full" />

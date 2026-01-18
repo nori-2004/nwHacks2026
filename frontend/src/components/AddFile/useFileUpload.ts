@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { api } from '@/lib/api'
 import type { FileType, StatusType } from './types'
 import { fileTypeConfig, isElectron } from './types'
@@ -15,19 +15,15 @@ function getFileExtension(filename: string): string {
 // Helper to detect actual file type from files
 function detectFileType(
   selectedType: FileType | null,
-  selectedFiles: string[],
-  browserFiles: File[]
+  filenames: string[]
 ): 'video' | 'audio' | 'document' | 'image' | null {
-  // If user explicitly selected a type (not 'all'), use that
   if (selectedType && selectedType !== 'all') {
     return selectedType
   }
 
-  // Otherwise, detect from file extensions
-  const files = isElectron() ? selectedFiles : browserFiles.map(f => f.name)
-  if (files.length === 0) return null
+  if (filenames.length === 0) return null
 
-  const ext = getFileExtension(files[0])
+  const ext = getFileExtension(filenames[0])
   
   if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) return 'video'
   if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'].includes(ext)) return 'audio'
@@ -45,6 +41,16 @@ export function useFileUpload({ onComplete }: UseFileUploadOptions) {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<StatusType>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Use refs to always have current values in async functions
+  const browserFilesRef = useRef<File[]>([])
+  const selectedFilesRef = useRef<string[]>([])
+  const selectedTypeRef = useRef<FileType | null>(null)
+  
+  // Keep refs in sync with state
+  useEffect(() => { browserFilesRef.current = browserFiles }, [browserFiles])
+  useEffect(() => { selectedFilesRef.current = selectedFiles }, [selectedFiles])
+  useEffect(() => { selectedTypeRef.current = selectedType }, [selectedType])
 
   const resetAndClose = useCallback(() => {
     setIsOpen(false)
@@ -91,36 +97,35 @@ export function useFileUpload({ onComplete }: UseFileUploadOptions) {
     e.target.value = ''
   }, [])
 
-  const handleUploadOnly = useCallback(async () => {
-    if (selectedFiles.length === 0) return
+  const handleUploadOnly = async () => {
+    const files = selectedFilesRef.current
+    const bFiles = browserFilesRef.current
+    const type = selectedTypeRef.current
+    
+    console.log('handleUploadOnly - files:', files, 'browserFiles:', bFiles)
+    
+    if (files.length === 0) return
     
     setLoading(true)
     setStatus({ type: 'info', message: 'Uploading files...' })
 
     try {
       if (isElectron()) {
-        const result = await api.registerMultipleFiles(selectedFiles)
+        const result = await api.registerMultipleFiles(files)
         if (result.success) {
           setStatus({ type: 'success', message: `Added ${result.registered} files` })
-          setTimeout(() => {
-            resetAndClose()
-            onComplete()
-          }, 1000)
+          setTimeout(() => { resetAndClose(); onComplete() }, 1000)
         } else {
           setStatus({ type: 'error', message: 'Failed to add files' })
         }
       } else {
-        // Map FileType to API file type (exclude 'all' and 'document' -> undefined for general upload)
-        const apiFileType = selectedType === 'all' ? undefined : 
-                           selectedType === 'document' ? 'document' : 
-                           selectedType as 'video' | 'image' | 'audio' | 'document' | undefined
-        const result = await api.uploadFiles(browserFiles, apiFileType)
+        const apiFileType = type === 'all' ? undefined : 
+                           type === 'document' ? 'document' : 
+                           type as 'video' | 'image' | 'audio' | 'document' | undefined
+        const result = await api.uploadFiles(bFiles, apiFileType)
         if (result.success) {
           setStatus({ type: 'success', message: `Uploaded ${result.registered || result.files?.length || 0} files` })
-          setTimeout(() => {
-            resetAndClose()
-            onComplete()
-          }, 1000)
+          setTimeout(() => { resetAndClose(); onComplete() }, 1000)
         } else {
           setStatus({ type: 'error', message: 'Failed to upload files' })
         }
@@ -131,17 +136,25 @@ export function useFileUpload({ onComplete }: UseFileUploadOptions) {
     } finally {
       setLoading(false)
     }
-  }, [selectedFiles, browserFiles, selectedType, resetAndClose, onComplete])
+  }
 
-  const handleAnalyzeWithAI = useCallback(async () => {
-    if (selectedFiles.length === 0) return
+  const handleAnalyzeWithAI = async () => {
+    const files = selectedFilesRef.current
+    const bFiles = browserFilesRef.current
+    const type = selectedTypeRef.current
     
-    // Detect file type
-    const detectedType = detectFileType(selectedType, selectedFiles, browserFiles)
-    console.log('Analyze - Selected type:', selectedType, 'Detected type:', detectedType, 'Files:', selectedFiles)
+    console.log('handleAnalyzeWithAI - files:', files, 'browserFiles:', bFiles, 'type:', type)
     
-    if (!detectedType || detectedType === 'image') {
-      setStatus({ type: 'error', message: 'AI analysis is available for videos, audio, and documents (.txt, .md)' })
+    if (files.length === 0) {
+      setStatus({ type: 'error', message: 'No files selected' })
+      return
+    }
+    
+    const detectedType = detectFileType(type, files)
+    console.log('Detected type:', detectedType)
+    
+    if (!detectedType) {
+      setStatus({ type: 'error', message: 'Could not detect file type for analysis' })
       return
     }
 
@@ -149,12 +162,90 @@ export function useFileUpload({ onComplete }: UseFileUploadOptions) {
     setStatus({ type: 'info', message: `Analyzing ${detectedType} with AI... This may take a while.` })
 
     try {
+      // DOCUMENTS
       if (detectedType === 'document') {
-        await analyzeDocuments()
-      } else if (detectedType === 'audio') {
-        await analyzeAudio()
-      } else if (detectedType === 'video') {
-        await analyzeVideos()
+        if (isElectron()) {
+          const result = await api.processDocuments(files)
+          if (result.success) {
+            const totalKeywords = result.results.reduce((acc, r) => acc + r.keywords.length, 0)
+            setStatus({ type: 'success', message: `Analyzed ${result.processed} documents. Found ${totalKeywords} keywords.` })
+            setTimeout(() => { resetAndClose(); onComplete() }, 1500)
+          } else {
+            setStatus({ type: 'error', message: 'Failed to analyze documents' })
+          }
+        } else {
+          const result = await api.uploadAndProcessDocuments(bFiles)
+          if (result.success) {
+            setStatus({ type: 'success', message: `Analyzed ${result.processed} documents` })
+            setTimeout(() => { resetAndClose(); onComplete() }, 1500)
+          } else {
+            setStatus({ type: 'error', message: 'Failed to analyze documents' })
+          }
+        }
+      }
+      // AUDIO
+      else if (detectedType === 'audio') {
+        if (isElectron()) {
+          const result = await api.processAudio(files)
+          if (result.success) {
+            setStatus({ type: 'success', message: `Analyzed ${result.totalAudioProcessed} audio files.` })
+            setTimeout(() => { resetAndClose(); onComplete() }, 1500)
+          } else {
+            setStatus({ type: 'error', message: 'Failed to analyze audio' })
+          }
+        } else {
+          const result = await api.uploadAndProcessAudio(bFiles)
+          if (result.success) {
+            setStatus({ type: 'success', message: `Analyzed ${result.totalAudioProcessed} audio files` })
+            setTimeout(() => { resetAndClose(); onComplete() }, 1500)
+          } else {
+            setStatus({ type: 'error', message: 'Failed to analyze audio' })
+          }
+        }
+      }
+      // VIDEO
+      else if (detectedType === 'video') {
+        if (isElectron()) {
+          const result = await api.processVideos(files)
+          if (result.success) {
+            setStatus({ type: 'success', message: `Analyzed ${result.totalVideosProcessed} videos.` })
+            setTimeout(() => { resetAndClose(); onComplete() }, 1500)
+          } else {
+            setStatus({ type: 'error', message: 'Failed to analyze videos' })
+          }
+        } else {
+          const result = await api.uploadAndProcessVideos(bFiles)
+          if (result.success) {
+            setStatus({ type: 'success', message: `Analyzed ${result.totalVideosProcessed} videos` })
+            setTimeout(() => { resetAndClose(); onComplete() }, 1500)
+          } else {
+            setStatus({ type: 'error', message: 'Failed to analyze videos' })
+          }
+        }
+      }
+      // IMAGES
+      else if (detectedType === 'image') {
+        if (isElectron()) {
+          const result = await api.processImages(files)
+          if (result.success) {
+            const totalKeywords = result.results?.reduce((acc, r) => acc + (r.keywords?.length || 0), 0) || 0
+            setStatus({ type: 'success', message: `Analyzed ${result.processed} images. Found ${totalKeywords} keywords.` })
+            setTimeout(() => { resetAndClose(); onComplete() }, 1500)
+          } else {
+            setStatus({ type: 'error', message: 'Failed to analyze images' })
+          }
+        } else {
+          console.log('Browser mode - uploading images:', bFiles)
+          const result = await api.uploadAndProcessImages(bFiles)
+          console.log('Upload result:', result)
+          if (result.success) {
+            const totalKeywords = result.results?.reduce((acc, r) => acc + (r.keywords?.length || 0), 0) || 0
+            setStatus({ type: 'success', message: `Analyzed ${result.processed} images. Found ${totalKeywords} keywords.` })
+            setTimeout(() => { resetAndClose(); onComplete() }, 1500)
+          } else {
+            setStatus({ type: 'error', message: 'Failed to analyze images' })
+          }
+        }
       }
     } catch (error) {
       console.error('Analysis error:', error)
@@ -162,80 +253,7 @@ export function useFileUpload({ onComplete }: UseFileUploadOptions) {
     } finally {
       setLoading(false)
     }
-  }, [selectedFiles, browserFiles, selectedType, resetAndClose, onComplete])
-
-  // Analyze documents helper
-  const analyzeDocuments = useCallback(async () => {
-    if (isElectron()) {
-      const result = await api.processDocuments(selectedFiles)
-      if (result.success) {
-        const totalKeywords = result.results.reduce((acc, r) => acc + r.keywords.length, 0)
-        setStatus({ 
-          type: 'success', 
-          message: `Analyzed ${result.processed} documents. Found ${totalKeywords} keywords.` 
-        })
-        setTimeout(() => { resetAndClose(); onComplete() }, 1500)
-      } else {
-        setStatus({ type: 'error', message: 'Failed to analyze documents' })
-      }
-    } else {
-      const result = await api.uploadAndProcessDocuments(browserFiles)
-      if (result.success) {
-        setStatus({ type: 'success', message: `Analyzed ${result.processed} documents` })
-        setTimeout(() => { resetAndClose(); onComplete() }, 1500)
-      } else {
-        setStatus({ type: 'error', message: 'Failed to analyze documents' })
-      }
-    }
-  }, [selectedFiles, browserFiles, resetAndClose, onComplete])
-
-  // Analyze audio helper
-  const analyzeAudio = useCallback(async () => {
-    if (isElectron()) {
-      const result = await api.processAudio(selectedFiles)
-      if (result.success) {
-        setStatus({ 
-          type: 'success', 
-          message: `Analyzed ${result.totalAudioProcessed} audio files. Found ${result.combinedKeywordsArray.length} keywords.` 
-        })
-        setTimeout(() => { resetAndClose(); onComplete() }, 1500)
-      } else {
-        setStatus({ type: 'error', message: 'Failed to analyze audio' })
-      }
-    } else {
-      const result = await api.uploadAndProcessAudio(browserFiles)
-      if (result.success) {
-        setStatus({ type: 'success', message: `Analyzed ${result.totalAudioProcessed} audio files` })
-        setTimeout(() => { resetAndClose(); onComplete() }, 1500)
-      } else {
-        setStatus({ type: 'error', message: 'Failed to analyze audio' })
-      }
-    }
-  }, [selectedFiles, browserFiles, resetAndClose, onComplete])
-
-  // Analyze videos helper
-  const analyzeVideos = useCallback(async () => {
-    if (isElectron()) {
-      const result = await api.processVideos(selectedFiles)
-      if (result.success) {
-        setStatus({ 
-          type: 'success', 
-          message: `Analyzed ${result.totalVideosProcessed} videos. Found ${result.combinedKeywordsArray.length} keywords.` 
-        })
-        setTimeout(() => { resetAndClose(); onComplete() }, 1500)
-      } else {
-        setStatus({ type: 'error', message: 'Failed to analyze videos' })
-      }
-    } else {
-      const result = await api.uploadAndProcessVideos(browserFiles)
-      if (result.success) {
-        setStatus({ type: 'success', message: `Analyzed ${result.totalVideosProcessed} videos` })
-        setTimeout(() => { resetAndClose(); onComplete() }, 1500)
-      } else {
-        setStatus({ type: 'error', message: 'Failed to analyze videos' })
-      }
-    }
-  }, [selectedFiles, browserFiles, resetAndClose, onComplete])
+  }
 
   const removeFile = useCallback((index: number) => {
     setSelectedFiles(files => files.filter((_, i) => i !== index))

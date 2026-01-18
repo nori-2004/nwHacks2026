@@ -157,6 +157,36 @@ export interface DocumentContentResult {
   documentType: string
 }
 
+export interface ImageAnalysisResult {
+  filepath: string
+  filename: string
+  keywords: string[]
+  description: string
+}
+
+export interface ImageProcessResult {
+  success: boolean
+  processed: number
+  failed: number
+  results: ImageAnalysisResult[]
+  savedFiles?: {
+    filename: string
+    filepath: string
+  }[]
+  errors?: { filepath?: string; filename?: string; error: string }[]
+}
+
+export interface ImageAnalysisResponse {
+  success: boolean
+  file: FileRecord
+  analysis: {
+    keywords: string[]
+    description: string
+    aiAnalyzed: boolean
+    analyzedAt: string | null
+  }
+}
+
 // File operations
 export const api = {
   // Get all files
@@ -252,6 +282,48 @@ export const api = {
     const res = await fetch(`${API_BASE}/audio/keywords`, {
       method: 'POST',
       body: formData
+    })
+    return res.json()
+  },
+
+  // Process images for keywords (AI analysis - Electron mode)
+  async processImages(filepaths: string[]): Promise<ImageProcessResult> {
+    console.log('Processing images:', filepaths)
+    const res = await fetch(`${API_BASE}/image/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepaths })
+    })
+    const data = await res.json()
+    console.log('Image process result:', data)
+    return data
+  },
+
+  // Upload and process images (browser mode)
+  async uploadAndProcessImages(files: File[]): Promise<ImageProcessResult> {
+    console.log('Uploading and processing images:', files.map(f => f.name))
+    const formData = new FormData()
+    files.forEach(file => formData.append('images', file))
+    
+    const res = await fetch(`${API_BASE}/image/keywords`, {
+      method: 'POST',
+      body: formData
+    })
+    const data = await res.json()
+    console.log('Image upload result:', data)
+    return data
+  },
+
+  // Get image analysis by ID
+  async getImageAnalysis(id: number): Promise<ImageAnalysisResponse> {
+    const res = await fetch(`${API_BASE}/image/${id}/analysis`)
+    return res.json()
+  },
+
+  // Re-analyze an image by ID
+  async analyzeImage(id: number): Promise<ImageAnalysisResponse> {
+    const res = await fetch(`${API_BASE}/image/${id}/analyze`, {
+      method: 'POST'
     })
     return res.json()
   },

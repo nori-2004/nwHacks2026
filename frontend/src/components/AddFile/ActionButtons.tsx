@@ -15,9 +15,8 @@ export function ActionButtons({
   onUploadOnly, 
   onAnalyzeWithAI 
 }: ActionButtonsProps) {
-  // AI analysis is available for videos, audio, and documents
-  const isAISupported = selectedType === 'video' || selectedType === 'audio' || selectedType === 'document' || selectedType === 'all'
-  const isAIDisabled = loading || !isAISupported
+  // AI analysis is available for videos, audio, documents, and images
+  const isAISupported = selectedType === 'video' || selectedType === 'audio' || selectedType === 'document' || selectedType === 'image' || selectedType === 'all'
 
   return (
     <div className="space-y-2 pt-2 border-t border-border">
@@ -40,7 +39,7 @@ export function ActionButtons({
         size="sm"
         className="w-full justify-start gap-2"
         onClick={onAnalyzeWithAI}
-        disabled={isAIDisabled}
+        disabled={loading || !isAISupported}
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -48,9 +47,6 @@ export function ActionButtons({
           <Sparkles className="h-4 w-4" />
         )}
         Analyze with AI
-        {!isAISupported && (
-          <span className="text-xs text-muted-foreground ml-auto">(images not supported)</span>
-        )}
       </Button>
     </div>
   )
