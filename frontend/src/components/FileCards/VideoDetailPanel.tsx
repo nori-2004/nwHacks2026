@@ -21,6 +21,7 @@ interface VideoDetailPanelProps {
   onClose: () => void
 }
 
+
 export function VideoDetailPanel({ file, onClose }: VideoDetailPanelProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)

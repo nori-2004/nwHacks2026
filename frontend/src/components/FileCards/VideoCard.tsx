@@ -4,8 +4,7 @@ import {
   Play, 
   Pause, 
   Trash2,
-  Film,
-  Clock
+  Film
 } from 'lucide-react'
 import type { FileRecord } from '@/lib/api'
 import { getMediaUrl } from '@/lib/utils'
@@ -38,18 +37,7 @@ export function VideoCard({ file, onDelete, onSelect }: VideoCardProps) {
   // Get filename without extension
   const displayName = file.filename.replace(/\.[^/.]+$/, '')
 
-  // Get frame count from keywordFrameMap
-  const frameCount = file.keywordFrameMap ? Object.keys(file.keywordFrameMap).length : 0
-
-  // Format duration if available
-  const formatDuration = (seconds?: number) => {
-    if (!seconds) return null
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-  const duration = file.metadata?.duration ? formatDuration(parseFloat(file.metadata.duration)) : null
-
+  
   return (
     <div 
       className="group relative w-full h-full overflow-hidden rounded-xl cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all bg-black"
@@ -94,24 +82,10 @@ export function VideoCard({ file, onDelete, onSelect }: VideoCardProps) {
       </div>
 
       {/* Title Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
-        <h3 className="font-medium text-sm text-white truncate mb-1" title={file.filename}>
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
+        <h3 className="font-medium text-sm text-white truncate" title={file.filename}>
           {displayName}
         </h3>
-        <div className="flex items-center gap-3 text-[10px] text-white/70">
-          {duration && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {duration}
-            </span>
-          )}
-          {frameCount > 0 && (
-            <span className="flex items-center gap-1">
-              <Film className="h-3 w-3" />
-              {frameCount} frames
-            </span>
-          )}
-        </div>
       </div>
     </div>
   )
