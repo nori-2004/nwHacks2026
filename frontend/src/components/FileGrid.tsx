@@ -70,20 +70,15 @@ export function FileGrid({ files, loading, onRefresh }: FileGridProps) {
   const [documentEditorFile, setDocumentEditorFile] = useState<FileRecord | null>(null)
 
   // Distribute files into columns for masonry layout
+  // Uses row-first distribution to preserve sort order (first items appear top-left)
   const columns = useMemo(() => {
     const numColumns = 4 // We'll use CSS to adjust for responsive
     const cols: FileRecord[][] = Array.from({ length: numColumns }, () => [])
-    const colHeights: number[] = Array(numColumns).fill(0)
     
-    files.forEach(file => {
-      // Find the shortest column
-      const shortestCol = colHeights.indexOf(Math.min(...colHeights))
-      cols[shortestCol].push(file)
-      
-      // Estimate height based on size class
-      const size = getItemSize(file)
-      const heightEstimate = size === 'large' ? 3 : size === 'medium' ? 2 : size === 'small' ? 1 : 0.3
-      colHeights[shortestCol] += heightEstimate
+    // Distribute row by row to preserve order (most relevant items appear first/top)
+    files.forEach((file, index) => {
+      const colIndex = index % numColumns
+      cols[colIndex].push(file)
     })
     
     return cols

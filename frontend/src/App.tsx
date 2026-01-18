@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 import { FileGrid } from '@/components/FileGrid'
-import { SearchResults } from '@/components/SearchResults'
 import { CreateNoteModal } from '@/components/CreateNoteModal'
 import { api } from '@/lib/api'
 import type { FileRecord, SemanticSearchResult } from '@/lib/api'
@@ -17,11 +16,32 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ContentType>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchConfidence, setSearchConfidence] = useState(0.3)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isCreateNoteModalOpen, setIsCreateNoteModalOpen] = useState(false)
   
   // Debounce search for performance (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
+
+  // Convert search results to FileRecord format for FileGrid
+  const displayFiles = useMemo((): FileRecord[] => {
+    if (isSemanticSearch && searchResults.length > 0) {
+      return searchResults.map(result => ({
+        id: result.file_id,
+        filename: result.filename,
+        filepath: result.filepath,
+        filetype: result.filetype,
+        size: result.size,
+        mimetype: result.mimetype,
+        created_at: result.created_at,
+        metadata: result.metadata,
+        keywords: result.keywords,
+        // Include matched keywords info in metadata for potential highlighting
+        tags: result.matchedKeywords?.map(mk => mk.keyword)
+      }))
+    }
+    return files
+  }, [isSemanticSearch, searchResults, files])
 
   const fetchFiles = useCallback(async () => {
     setLoading(true)
@@ -60,7 +80,7 @@ function App() {
         const result = await api.semanticSearch({
           q: debouncedSearchQuery,
           topK: 20,
-          minSimilarity: 0.3,
+          minSimilarity: searchConfidence,
           type: filter === 'all' ? undefined : filter
         })
         if (result.success) {
@@ -84,10 +104,14 @@ function App() {
     }
 
     performSearch()
-  }, [debouncedSearchQuery, filter])
+  }, [debouncedSearchQuery, filter, searchConfidence])
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
+  }
+
+  const handleConfidenceChange = (confidence: number) => {
+    setSearchConfidence(confidence)
   }
 
   const handleFilterChange = (newFilter: ContentType) => {
@@ -183,6 +207,8 @@ function App() {
           onAddTags={handleAddTags}
           onOpenFolder={handleOpenFolder}
           onFilesAdded={fetchFiles}
+          searchConfidence={searchConfidence}
+          onConfidenceChange={handleConfidenceChange}
         />
 
         {/* Content Area */}
@@ -213,29 +239,17 @@ function App() {
                     : `${filter.charAt(0).toUpperCase() + filter.slice(1)}s`
                 }
                 <span className="text-muted-foreground font-normal ml-2">
-                  ({isSemanticSearch ? searchResults.length : files.length})
+                  ({displayFiles.length})
                 </span>
               </h2>
             </div>
 
-            {/* Search Results or File Grid */}
-            {isSemanticSearch && debouncedSearchQuery.trim() ? (
-              <SearchResults
-                results={searchResults}
-                query={debouncedSearchQuery}
-                loading={loading}
-                onFileSelect={(fileId) => {
-                  // Find file and open details - for now just log
-                  console.log('Selected file:', fileId)
-                }}
-              />
-            ) : (
-              <FileGrid 
-                files={files} 
-                loading={loading} 
-                onRefresh={fetchFiles} 
-              />
-            )}
+            {/* File Grid - shows filtered results when searching */}
+            <FileGrid 
+              files={displayFiles} 
+              loading={loading} 
+              onRefresh={fetchFiles} 
+            />
           </div>
         </main>
       </div>

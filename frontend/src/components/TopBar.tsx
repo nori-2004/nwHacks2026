@@ -24,16 +24,20 @@ interface TopBarProps {
   onAddTags?: () => void
   onOpenFolder?: () => void
   onFilesAdded?: () => void
+  searchConfidence?: number
+  onConfidenceChange?: (confidence: number) => void
 }
 
-export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolder, onFilesAdded }: TopBarProps) {
+export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolder, onFilesAdded, searchConfidence = 0.3, onConfidenceChange }: TopBarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const [showCommands, setShowCommands] = useState(false)
+  const [showConfidence, setShowConfidence] = useState(false)
   const [isIndexing, setIsIndexing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const commandsRef = useRef<HTMLDivElement>(null)
+  const confidenceRef = useRef<HTMLDivElement>(null)
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory()
 
   const handleIndexKeywords = async () => {
@@ -143,6 +147,9 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
       }
       if (commandsRef.current && !commandsRef.current.contains(e.target as Node)) {
         setShowCommands(false)
+      }
+      if (confidenceRef.current && !confidenceRef.current.contains(e.target as Node)) {
+        setShowConfidence(false)
       }
     }
 
@@ -266,10 +273,46 @@ export function TopBar({ onSearch, onUpload, onProcessAI, onAddTags, onOpenFolde
           )}
         </div>
 
-        <Button variant="outline" size="sm" className="h-8">
-          <SlidersHorizontal className="h-4 w-4 mr-2" />
-          Filters
-        </Button>
+        {/* Confidence/Similarity Control */}
+        <div className="relative" ref={confidenceRef}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 gap-2"
+            onClick={() => setShowConfidence(!showConfidence)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {Math.round(searchConfidence * 100)}%
+            <ChevronDown className={`h-3 w-3 transition-transform ${showConfidence ? 'rotate-180' : ''}`} />
+          </Button>
+
+          {/* Confidence Dropdown */}
+          {showConfidence && (
+            <div className="absolute top-full right-0 mt-1 w-64 bg-popover border border-border rounded-md shadow-lg overflow-hidden z-50 p-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Search Confidence</span>
+                  <span className="text-sm text-primary font-medium">{Math.round(searchConfidence * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={searchConfidence * 100}
+                  onChange={(e) => onConfidenceChange?.(parseInt(e.target.value) / 100)}
+                  className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>More results</span>
+                  <span>More precise</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Higher confidence shows only closely matching results. Lower confidence includes broader matches.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
         <AddFileButton onComplete={onFilesAdded || (() => {})} />
       </div>
