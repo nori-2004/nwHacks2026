@@ -26,8 +26,8 @@ export function ImageCard({ file, onDelete, onSelect }: ImageCardProps) {
     return new Date(dateStr).toLocaleDateString()
   }
 
-  // Convert filepath to file:// URL for image display
-  const imageSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  // Convert filepath to media:// URL for image display
+  const imageSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   return (
     <Card 

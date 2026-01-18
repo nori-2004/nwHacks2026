@@ -13,7 +13,7 @@ interface ImageDetailPanelProps {
 }
 
 export function ImageDetailPanel({ file, onClose }: ImageDetailPanelProps) {
-  const imageSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  const imageSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   const formatSize = (bytes?: number) => {
     if (!bytes) return 'Unknown'

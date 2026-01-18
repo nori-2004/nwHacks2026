@@ -14,7 +14,7 @@ interface VideoDetailPanelProps {
 }
 
 export function VideoDetailPanel({ file, onClose }: VideoDetailPanelProps) {
-  const videoSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  const videoSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   const formatSize = (bytes?: number) => {
     if (!bytes) return 'Unknown'

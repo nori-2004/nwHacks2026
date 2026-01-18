@@ -59,8 +59,8 @@ export function AudioCard({ file, onDelete, onSelect }: AudioCardProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Convert filepath to file:// URL for audio playback
-  const audioSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  // Convert filepath to media:// URL for audio playback
+  const audioSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   // Get metadata
   const transcription = file.metadata?.transcription

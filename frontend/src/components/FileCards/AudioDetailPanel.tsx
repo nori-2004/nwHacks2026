@@ -27,7 +27,7 @@ export function AudioDetailPanel({ file, onClose }: AudioDetailPanelProps) {
   const [duration, setDuration] = useState(0)
   const [isMuted, setIsMuted] = useState(false)
 
-  const audioSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  const audioSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   // Get metadata
   const transcription = file.metadata?.transcription

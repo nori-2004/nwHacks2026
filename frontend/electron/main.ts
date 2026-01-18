@@ -1,11 +1,25 @@
-import { app, BrowserWindow, ipcMain, dialog, session } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, session, protocol, net } from 'electron'
 import path from 'path'
-import { fileURLToPath } from 'url'
+import { fileURLToPath, pathToFileURL } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const isDev = !app.isPackaged
+
+// Register the custom protocol scheme before app is ready
+protocol.registerSchemesAsPrivileged([
+  { 
+    scheme: 'media', 
+    privileges: { 
+      secure: true, 
+      supportFetchAPI: true, 
+      stream: true,
+      bypassCSP: true,
+      corsEnabled: true
+    } 
+  }
+])
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -25,10 +39,10 @@ function createWindow() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file:; " +
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: media:; " +
           "connect-src 'self' http://localhost:* ws://localhost:*; " +
-          "media-src 'self' file: blob:; " +
-          "img-src 'self' data: file: blob: https:;"
+          "media-src 'self' file: blob: media:; " +
+          "img-src 'self' data: file: blob: https: media:;"
         ]
       }
     })
@@ -66,6 +80,51 @@ ipcMain.handle('dialog:openFolder', async () => {
 })
 
 app.whenReady().then(() => {
+  // Register custom protocol handler for local media files
+  protocol.handle('media', async (request) => {
+    try {
+      // URL format: media://C:/path/to/file.mp4 or media://C/path/to/file.mp4
+      let filePath = decodeURIComponent(request.url.replace('media://', ''))
+      
+      console.log('Media protocol - original URL:', request.url)
+      console.log('Media protocol - decoded path:', filePath)
+      
+      // Fix Windows paths: if starts with single letter + slash, add colon
+      // C/Users/... -> C:/Users/...
+      if (filePath.match(/^[A-Za-z]\//)) {
+        filePath = filePath.charAt(0) + ':' + filePath.substring(1)
+        console.log('Media protocol - fixed path:', filePath)
+      }
+      
+      // Handle leading slash before drive letter: /C:/... -> C:/...
+      if (filePath.match(/^\/[A-Za-z]:/)) {
+        filePath = filePath.substring(1)
+      }
+      
+      // Check if file exists
+      const fs = await import('fs')
+      if (!fs.existsSync(filePath)) {
+        console.error('Media protocol - file not found:', filePath)
+        return new Response('File not found', { 
+          status: 404,
+          headers: { 'Content-Type': 'text/plain' }
+        })
+      }
+      
+      // Use pathToFileURL for proper Windows path handling
+      const fileUrl = pathToFileURL(filePath).href
+      console.log('Media protocol - serving:', fileUrl)
+      
+      return net.fetch(fileUrl)
+    } catch (error) {
+      console.error('Media protocol error:', error)
+      return new Response(`Error: ${error}`, { 
+        status: 500,
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    }
+  })
+
   createWindow()
 
   app.on('activate', () => {

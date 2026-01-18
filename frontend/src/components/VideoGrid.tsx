@@ -50,8 +50,8 @@ function VideoCard({ file, onDelete, onSelect }: VideoCardProps) {
     return new Date(dateStr).toLocaleDateString()
   }
 
-  // Convert filepath to file:// URL for video playback
-  const videoSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  // Convert filepath to media:// URL for video playback
+  const videoSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   return (
     <Card 
@@ -260,7 +260,7 @@ export function VideoGrid({ files, loading, onRefresh }: VideoGridProps) {
             {/* Video Player */}
             <div className="aspect-video bg-black rounded-lg overflow-hidden">
               <video
-                src={`file://${selectedFile.filepath.replace(/\\/g, '/')}`}
+                src={`media://${selectedFile.filepath.replace(/\\/g, '/')}`}
                 className="w-full h-full object-contain"
                 controls
               />

@@ -48,8 +48,8 @@ export function VideoCard({ file, onDelete, onSelect }: VideoCardProps) {
     return new Date(dateStr).toLocaleDateString()
   }
 
-  // Convert filepath to file:// URL for video playback
-  const videoSrc = `file://${file.filepath.replace(/\\/g, '/')}`
+  // Convert filepath to media:// URL for video playback (custom Electron protocol)
+  const videoSrc = `media://${file.filepath.replace(/\\/g, '/')}`
 
   return (
     <Card 
