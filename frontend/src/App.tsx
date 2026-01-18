@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
-import { VideoGrid } from '@/components/VideoGrid'
+import { FileGrid } from '@/components/FileGrid'
 import { AddFileButton } from '@/components/AddFile'
 import { api } from '@/lib/api'
 import type { FileRecord } from '@/lib/api'
@@ -83,7 +83,7 @@ function App() {
             </div>
 
             {/* File Grid */}
-            <VideoGrid 
+            <FileGrid 
               files={files} 
               loading={loading} 
               onRefresh={fetchFiles} 

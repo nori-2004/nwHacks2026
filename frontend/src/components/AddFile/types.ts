@@ -33,8 +33,8 @@ export const fileTypeConfig: Record<FileType, FileTypeConfig> = {
   document: {
     label: 'Documents',
     icon: FileText,
-    accept: '.pdf,.doc,.docx,.txt,.md',
-    extensions: ['pdf', 'doc', 'docx', 'txt', 'md']
+    accept: '.txt,.md',
+    extensions: ['txt', 'md']
   },
   all: {
     label: 'All Files',
