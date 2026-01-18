@@ -71,9 +71,11 @@ export const processLocalVideos = async (req: Request, res: Response) => {
     const allResults = await client.analyzeMultipleVideos(videoConfigs);
 
     // Extract keywords from all videos
-    const videoResults = allResults.map((result, index) => {
+    // Each result has: videoPath, frames (array), tokensUsed
+    const videoResults = allResults.map((result) => {
       const allKeywords = new Set<string>();
-      const filepath = validPaths[index];
+      // Use videoPath from result to ensure correct video-keyword association
+      const filepath = result.videoPath;
 
       // Get keywords per frame
       const framesWithKeywords = result.frames.map(
@@ -269,8 +271,12 @@ export const extractKeywords = async (req: Request, res: Response) => {
 
     // Extract keywords from all videos
     // Each result has: videoPath, frames (array), tokensUsed
-    const videoResults = allResults.map((result, index) => {
+    const videoResults = allResults.map((result) => {
       const allKeywords = new Set<string>();
+      // Use videoPath from result to ensure correct video-keyword association
+      const filepath = result.videoPath;
+      // Find the matching file from the original upload
+      const matchingFile = files.find(f => f.path === filepath);
 
       // Get keywords per frame
       const framesWithKeywords = result.frames.map(
@@ -299,7 +305,8 @@ export const extractKeywords = async (req: Request, res: Response) => {
       const keywordsArray = Array.from(allKeywords);
 
       return {
-        filename: files[index].originalname,
+        filepath,
+        filename: matchingFile?.originalname || path.basename(filepath),
         keywords: keywordsArray.join(", "),
         keywordsArray,
         framesAnalyzed: result.frames.length,
@@ -314,8 +321,13 @@ export const extractKeywords = async (req: Request, res: Response) => {
     );
 
     // Save each video to the database
-    const savedFiles = videoResults.map((result, index) => {
-      const file = files[index];
+    const savedFiles = videoResults.map((result) => {
+      // Find the matching file from the original upload
+      const file = files.find(f => f.path === result.filepath);
+      if (!file) {
+        console.warn(`Could not find matching file for ${result.filepath}`);
+        return null;
+      }
 
       // Create file record
       const savedFile = FileModel.create({
@@ -354,7 +366,7 @@ export const extractKeywords = async (req: Request, res: Response) => {
         filename: savedFile.filename,
         filepath: savedFile.filepath,
       };
-    });
+    }).filter(Boolean);
 
     // Keep uploaded files so they can be viewed later
 
